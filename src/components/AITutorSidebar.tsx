@@ -44,7 +44,8 @@ const AITutorSidebar = ({ topic, subject, currentDraft, restoredChatHistory, onC
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    onChatHistoryChange?.(messages);
+  }, [messages, onChatHistoryChange]);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isStreaming) return;
