@@ -15,6 +15,8 @@ interface AITutorSidebarProps {
   topic: string;
   subject: string;
   currentDraft: string;
+  restoredChatHistory?: Message[];
+  onChatHistoryChange?: (history: Message[]) => void;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
