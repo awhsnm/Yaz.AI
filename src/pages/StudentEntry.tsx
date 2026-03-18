@@ -13,13 +13,9 @@ import {
 } from "@/components/ui/select";
 
 const SUBJECTS = [
-  "English Literature",
+  "English",
   "Russian Literature",
   "Kazakh Literature",
-  "History",
-  "Social Studies",
-  "Philosophy",
-  "Science",
   "General",
 ];
 
