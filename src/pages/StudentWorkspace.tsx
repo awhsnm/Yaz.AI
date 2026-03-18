@@ -167,7 +167,13 @@ const StudentWorkspace = () => {
 
         {/* AI Tutor - 30% */}
         <div className="flex-[3] min-w-[300px] max-w-[400px]">
-          <AITutorSidebar topic={topic} subject={subject} currentDraft={essay} />
+          <AITutorSidebar
+            topic={topic}
+            subject={subject}
+            currentDraft={essay}
+            restoredChatHistory={saved.current?.chatHistory}
+            onChatHistoryChange={setChatHistory}
+          />
         </div>
       </div>
 
