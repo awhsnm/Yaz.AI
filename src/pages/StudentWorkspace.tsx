@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, LogOut, Clock, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,17 +7,60 @@ import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
 
 const SESSION_DURATION = 45 * 60; // 45 minutes in seconds
+const STORAGE_KEY = "focuswrite_autosave";
+
+interface AutoSaveData {
+  essay: string;
+  chatHistory: { id: string; role: "user" | "assistant"; content: string }[];
+  remaining: number;
+  savedAt: number;
+}
+
+function loadAutoSave(): AutoSaveData | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as AutoSaveData;
+    // Only restore if saved within the last 2 hours
+    if (Date.now() - data.savedAt > 2 * 60 * 60 * 1000) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
 
 const StudentWorkspace = () => {
-  const [essay, setEssay] = useState("");
+  const saved = useRef(loadAutoSave());
+  const [essay, setEssay] = useState(saved.current?.essay ?? "");
   const [showExit, setShowExit] = useState(false);
-  const [remaining, setRemaining] = useState(SESSION_DURATION);
+  const [remaining, setRemaining] = useState(saved.current?.remaining ?? SESSION_DURATION);
+  const [chatHistory, setChatHistory] = useState<AutoSaveData["chatHistory"]>(saved.current?.chatHistory ?? []);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const studentName = sessionStorage.getItem("focuswrite_student");
   const topic = sessionStorage.getItem("focuswrite_topic") || "";
   const subject = sessionStorage.getItem("focuswrite_subject") || "";
+
+  // Auto-save every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const data: AutoSaveData = { essay, chatHistory, remaining, savedAt: Date.now() };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [essay, chatHistory, remaining]);
+
+  // BeforeUnload warning
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave? Your essay progress is saved, but the session is still active.";
+      return e.returnValue;
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   useEffect(() => {
     if (!studentName) {
@@ -124,7 +167,13 @@ const StudentWorkspace = () => {
 
         {/* AI Tutor - 30% */}
         <div className="flex-[3] min-w-[300px] max-w-[400px]">
-          <AITutorSidebar topic={topic} subject={subject} currentDraft={essay} />
+          <AITutorSidebar
+            topic={topic}
+            subject={subject}
+            currentDraft={essay}
+            restoredChatHistory={saved.current?.chatHistory}
+            onChatHistoryChange={setChatHistory}
+          />
         </div>
       </div>
 
