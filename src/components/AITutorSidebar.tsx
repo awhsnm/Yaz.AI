@@ -27,14 +27,16 @@ const quickPrompts = [
   "How can I improve my last paragraph?",
 ];
 
-const AITutorSidebar = ({ topic, subject, currentDraft }: AITutorSidebarProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: `Welcome! I'm your AI writing tutor. 💡\n\nYour essay topic: **"${topic}"**${subject ? ` (${subject})` : ""}\n\nI'll guide your thinking and help you build stronger arguments — but I won't write your essay for you.\n\nHow would you like to start? You can ask me about:\n• How to **begin** your essay\n• How to **structure** your argument\n• How to **strengthen** a specific paragraph`,
-    },
-  ]);
+const AITutorSidebar = ({ topic, subject, currentDraft, restoredChatHistory, onChatHistoryChange }: AITutorSidebarProps) => {
+  const welcomeMsg: Message = {
+    id: "welcome",
+    role: "assistant",
+    content: `Welcome! I'm your AI writing tutor. 💡\n\nYour essay topic: **"${topic}"**${subject ? ` (${subject})` : ""}\n\nI'll guide your thinking and help you build stronger arguments — but I won't write your essay for you.\n\nHow would you like to start? You can ask me about:\n• How to **begin** your essay\n• How to **structure** your argument\n• How to **strengthen** a specific paragraph`,
+  };
+
+  const [messages, setMessages] = useState<Message[]>(
+    restoredChatHistory && restoredChatHistory.length > 0 ? restoredChatHistory : [welcomeMsg]
+  );
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
