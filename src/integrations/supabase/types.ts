@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      essays: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_submitted: boolean
+          student_id: string
+          subject: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_submitted?: boolean
+          student_id: string
+          subject?: string
+          topic?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_submitted?: boolean
+          student_id?: string
+          subject?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essays_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          essay_id: string
+          id: string
+          sender: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          essay_id: string
+          id?: string
+          sender: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          essay_id?: string
+          id?: string
+          sender?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
