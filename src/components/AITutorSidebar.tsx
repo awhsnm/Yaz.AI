@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -12,6 +13,7 @@ interface Message {
 }
 
 interface AITutorSidebarProps {
+  essayId: string;
   topic: string;
   subject: string;
   currentDraft: string;
@@ -27,7 +29,7 @@ const quickPrompts = [
   "How can I improve my last paragraph?",
 ];
 
-const AITutorSidebar = ({ topic, subject, currentDraft, restoredChatHistory, onChatHistoryChange }: AITutorSidebarProps) => {
+const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHistory, onChatHistoryChange }: AITutorSidebarProps) => {
   const welcomeMsg: Message = {
     id: "welcome",
     role: "assistant",
@@ -49,11 +51,18 @@ const AITutorSidebar = ({ topic, subject, currentDraft, restoredChatHistory, onC
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isStreaming) return;
+    if (!essayId) {
+      toast({ title: "No active essay", description: "AI tutor requires an active essay.", variant: "destructive" });
+      return;
+    }
 
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: text.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsStreaming(true);
+
+    // Persist user message
+    supabase.from("messages").insert({ essay_id: essayId, content: userMsg.content, sender: "user" }).then(() => {});
 
     // Build conversation history (exclude welcome message)
     const history = [...messages.filter((m) => m.id !== "welcome"), userMsg].map((m) => ({
@@ -129,6 +138,11 @@ const AITutorSidebar = ({ topic, subject, currentDraft, restoredChatHistory, onC
           m.id === "streaming" ? { ...m, id: Date.now().toString() } : m
         )
       );
+
+      // Persist assistant message
+      if (assistantContent) {
+        supabase.from("messages").insert({ essay_id: essayId, content: assistantContent, sender: "ai" }).then(() => {});
+      }
     } catch (e) {
       console.error("AI tutor error:", e);
       const errorMsg = e instanceof Error ? e.message : "Something went wrong";

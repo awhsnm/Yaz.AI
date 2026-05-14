@@ -1,61 +1,81 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Shield, LogOut, Clock, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
 import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
-const SESSION_DURATION = 45 * 60; // 45 minutes in seconds
-const STORAGE_KEY = "focuswrite_autosave";
+const SESSION_DURATION = 45 * 60;
 
-interface AutoSaveData {
-  essay: string;
-  chatHistory: { id: string; role: "user" | "assistant"; content: string }[];
-  remaining: number;
-  savedAt: number;
-}
-
-function loadAutoSave(): AutoSaveData | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as AutoSaveData;
-    // Only restore if saved within the last 2 hours
-    if (Date.now() - data.savedAt > 2 * 60 * 60 * 1000) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
+interface Msg { id: string; role: "user" | "assistant"; content: string; }
 
 const StudentWorkspace = () => {
-  const saved = useRef(loadAutoSave());
-  const [essay, setEssay] = useState(saved.current?.essay ?? "");
-  const [showExit, setShowExit] = useState(false);
-  const [remaining, setRemaining] = useState(saved.current?.remaining ?? SESSION_DURATION);
-  const [chatHistory, setChatHistory] = useState<AutoSaveData["chatHistory"]>(saved.current?.chatHistory ?? []);
+  const { id: essayId } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const studentName = sessionStorage.getItem("focuswrite_student");
-  const topic = sessionStorage.getItem("focuswrite_topic") || "";
-  const subject = sessionStorage.getItem("focuswrite_subject") || "";
+  const [essay, setEssay] = useState("");
+  const [topic, setTopic] = useState("");
+  const [subject, setSubject] = useState("");
+  const [chatHistory, setChatHistory] = useState<Msg[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showExit, setShowExit] = useState(false);
+  const [remaining, setRemaining] = useState(SESSION_DURATION);
+  const lastSaved = useRef("");
 
-  // Auto-save every 5 seconds
+  // Load essay + messages
   useEffect(() => {
-    const interval = setInterval(() => {
-      const data: AutoSaveData = { essay, chatHistory, remaining, savedAt: Date.now() };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [essay, chatHistory, remaining]);
+    if (!essayId || !user) return;
+    (async () => {
+      const { data: e, error } = await supabase
+        .from("essays")
+        .select("*")
+        .eq("id", essayId)
+        .maybeSingle();
+      if (error || !e) {
+        navigate("/student-dashboard");
+        return;
+      }
+      setEssay(e.content);
+      setTopic(e.topic);
+      setSubject(e.subject);
+      lastSaved.current = e.content;
+      const { data: m } = await supabase
+        .from("messages")
+        .select("id, content, sender, created_at")
+        .eq("essay_id", essayId)
+        .order("created_at");
+      setChatHistory(
+        (m ?? []).map((x) => ({
+          id: x.id,
+          role: x.sender === "ai" ? "assistant" : "user",
+          content: x.content,
+        }))
+      );
+      setLoading(false);
+    })();
+  }, [essayId, user, navigate]);
 
-  // BeforeUnload warning
+  // Auto-save essay every 5s if changed
+  useEffect(() => {
+    if (!essayId || loading) return;
+    const i = setInterval(async () => {
+      if (essay === lastSaved.current) return;
+      const snapshot = essay;
+      const { error } = await supabase.from("essays").update({ content: snapshot }).eq("id", essayId);
+      if (!error) lastSaved.current = snapshot;
+    }, 5000);
+    return () => clearInterval(i);
+  }, [essay, essayId, loading]);
+
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = "Are you sure you want to leave? Your essay progress is saved, but the session is still active.";
+      e.returnValue = "Your essay is auto-saved. Are you sure you want to leave?";
       return e.returnValue;
     };
     window.addEventListener("beforeunload", handler);
@@ -63,49 +83,25 @@ const StudentWorkspace = () => {
   }, []);
 
   useEffect(() => {
-    if (!studentName) {
-      navigate("/student-entry");
-      return;
-    }
-    const timer = setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [studentName, navigate]);
+    if (loading) return;
+    const t = setInterval(() => setRemaining((r) => (r <= 1 ? 0 : r - 1)), 1000);
+    return () => clearInterval(t);
+  }, [loading]);
 
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent) => {
-      e.preventDefault();
-      toast({
-        title: "Paste disabled",
-        description: "External pasting is not allowed during focus mode. Write in your own words.",
-        variant: "destructive",
-      });
-    },
-    [toast]
-  );
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    toast({ title: "Paste disabled", description: "Write in your own words.", variant: "destructive" });
+  }, [toast]);
 
   const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-  };
-
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   const isTimeUp = remaining === 0;
-  const isLowTime = remaining <= 5 * 60 && remaining > 0;
+  const isLowTime = remaining <= 300 && remaining > 0;
 
-  if (!studentName) return null;
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-display">Loading session...</div>;
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Top bar */}
       <div className="h-11 border-b border-border flex items-center justify-between px-4 bg-card shrink-0">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
@@ -113,71 +109,51 @@ const StudentWorkspace = () => {
             <span className="text-xs font-display font-medium text-success">Focus Mode</span>
           </div>
           <span className="text-xs text-muted-foreground font-display">|</span>
-          <span className="text-xs text-muted-foreground font-display">{studentName}</span>
-          <span className="text-xs text-muted-foreground font-display">|</span>
           <div className="flex items-center gap-1 text-xs text-muted-foreground font-display">
             <BookOpen className="w-3 h-3" />
-            <span className="truncate max-w-[200px]">{topic}</span>
+            <span className="truncate max-w-[260px]">{topic}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div
-            className={`flex items-center gap-1.5 text-xs font-display font-medium ${
-              isTimeUp
-                ? "text-destructive"
-                : isLowTime
-                ? "text-warning"
-                : "text-muted-foreground"
-            }`}
-          >
+          <div className={`flex items-center gap-1.5 text-xs font-display font-medium ${isTimeUp ? "text-destructive" : isLowTime ? "text-warning" : "text-muted-foreground"}`}>
             <Clock className="w-3.5 h-3.5" />
             {isTimeUp ? "Time's up" : formatTime(remaining)}
           </div>
-          <span className="text-xs text-muted-foreground font-display">
-            {wordCount} {wordCount === 1 ? "word" : "words"}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowExit(true)}
-            className="font-display text-xs h-7"
-          >
-            <LogOut className="w-3 h-3 mr-1" />
-            Request Exit
+          <span className="text-xs text-muted-foreground font-display">{wordCount} words</span>
+          <Button variant="outline" size="sm" onClick={() => setShowExit(true)} className="font-display text-xs h-7">
+            <LogOut className="w-3 h-3 mr-1" />Submit & Exit
           </Button>
         </div>
       </div>
 
-      {/* Main content */}
       <div className="flex-1 flex min-h-0">
-        {/* Writing area - 70% */}
         <div className="flex-[7] flex justify-center overflow-y-auto p-8">
           <div className="w-full max-w-[800px]">
             <textarea
               value={essay}
               onChange={(e) => setEssay(e.target.value)}
               onPaste={handlePaste}
-              placeholder={`Begin writing your essay on "${topic}"...\n\nTake a deep breath. Organize your thoughts. Start with your main argument.`}
+              placeholder={`Begin writing your essay on "${topic}"...`}
               className="w-full h-full min-h-[calc(100vh-8rem)] resize-none bg-transparent focus-editor outline-none placeholder:text-muted-foreground/50"
               autoFocus
             />
           </div>
         </div>
 
-        {/* AI Tutor - 30% */}
         <div className="flex-[3] min-w-[300px] max-w-[400px]">
           <AITutorSidebar
+            essayId={essayId!}
             topic={topic}
             subject={subject}
             currentDraft={essay}
-            restoredChatHistory={saved.current?.chatHistory}
+            restoredChatHistory={chatHistory}
             onChatHistoryChange={setChatHistory}
           />
         </div>
       </div>
 
-      <ExitModal open={showExit} onClose={() => setShowExit(false)} essayContent={essay} />
+      <ExitModal open={showExit} onClose={() => setShowExit(false)} essayContent={essay} essayId={essayId} />
     </div>
   );
 };

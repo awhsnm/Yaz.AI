@@ -10,27 +10,30 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ExitModalProps {
   open: boolean;
   onClose: () => void;
   essayContent: string;
+  essayId?: string;
 }
 
-const ExitModal = ({ open, onClose, essayContent }: ExitModalProps) => {
+const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => {
   const [exitPassword, setExitPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleExit = () => {
+  const handleExit = async () => {
     // Demo: any 4+ char password works as exit password
     if (exitPassword.length < 4) {
       setError("Invalid exit password. Ask your teacher.");
       return;
     }
-    sessionStorage.removeItem("focuswrite_student");
-    sessionStorage.removeItem("focuswrite_session");
-    navigate("/");
+    if (essayId) {
+      await supabase.from("essays").update({ is_submitted: true, content: essayContent }).eq("id", essayId);
+    }
+    navigate("/student-dashboard");
   };
 
   return (
