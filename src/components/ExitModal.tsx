@@ -22,17 +22,44 @@ interface ExitModalProps {
 const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => {
   const [exitPassword, setExitPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
   const handleExit = async () => {
-    // Demo: any 4+ char password works as exit password
-    if (exitPassword.length < 4) {
-      setError("Invalid exit password. Ask your teacher.");
+    setError("");
+    if (!essayId) return;
+    setBusy(true);
+
+    // Save the latest content first (essay is locked but not yet finalized)
+    await supabase.from("essays").update({ content: essayContent }).eq("id", essayId);
+
+    // Look up the classroom's exit password via the essay
+    const { data: e } = await supabase
+      .from("essays")
+      .select("classroom_id")
+      .eq("id", essayId)
+      .maybeSingle();
+
+    if (!e?.classroom_id) {
+      setBusy(false);
+      setError("This essay is not linked to a lesson.");
       return;
     }
-    if (essayId) {
-      await supabase.from("essays").update({ is_submitted: true, content: essayContent }).eq("id", essayId);
+
+    const { data: c } = await supabase
+      .from("classrooms")
+      .select("exit_password")
+      .eq("id", e.classroom_id)
+      .maybeSingle();
+
+    setBusy(false);
+
+    if (!c?.exit_password || exitPassword.trim().toUpperCase() !== c.exit_password.toUpperCase()) {
+      setError("Invalid exit password. Ask your teacher to enter or approve it.");
+      return;
     }
+
+    await supabase.from("essays").update({ is_submitted: true }).eq("id", essayId);
     navigate("/student-dashboard");
   };
 
@@ -69,7 +96,7 @@ const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => 
 
           {error && <p className="text-destructive text-sm font-display">{error}</p>}
 
-          <Button onClick={handleExit} className="w-full font-display">
+          <Button onClick={handleExit} disabled={busy} className="w-full font-display">
             <LogOut className="w-4 h-4 mr-2" />
             Submit Essay & Exit
           </Button>

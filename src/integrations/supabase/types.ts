@@ -14,8 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      classrooms: {
+        Row: {
+          access_code: string
+          created_at: string
+          exit_password: string | null
+          id: string
+          is_active: boolean
+          name: string | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_code: string
+          created_at?: string
+          exit_password?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_code?: string
+          created_at?: string
+          exit_password?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       essays: {
         Row: {
+          classroom_id: string | null
           content: string
           created_at: string
           id: string
@@ -26,6 +60,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          classroom_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -36,6 +71,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          classroom_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -46,6 +82,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "essays_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "essays_student_id_fkey"
             columns: ["student_id"]
