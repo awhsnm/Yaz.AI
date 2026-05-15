@@ -1,16 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, BookOpen, LogOut, FileText, CheckCircle2, Clock } from "lucide-react";
+import { KeyRound, BookOpen, LogOut, FileText, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-const SUBJECTS = ["English", "Russian Literature", "Kazakh Literature", "General"];
 
 interface Essay {
   id: string;
@@ -24,14 +17,9 @@ interface Essay {
 const StudentDashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const [essays, setEssays] = useState<Essay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [topic, setTopic] = useState("");
-  const [subject, setSubject] = useState("");
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -45,22 +33,6 @@ const StudentDashboard = () => {
         setLoading(false);
       });
   }, [user]);
-
-  const startEssay = async () => {
-    if (!user || !topic.trim() || !subject) return;
-    setBusy(true);
-    const { data, error } = await supabase
-      .from("essays")
-      .insert({ student_id: user.id, topic: topic.trim(), subject })
-      .select()
-      .single();
-    setBusy(false);
-    if (error || !data) {
-      toast({ title: "Could not start", description: error?.message, variant: "destructive" });
-      return;
-    }
-    navigate(`/essay/${data.id}`);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,32 +54,9 @@ const StudentDashboard = () => {
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display font-semibold text-foreground">Drafts & Submissions</h2>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" />Start New Essay</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>New Essay</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div>
-                  <Label>Topic</Label>
-                  <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g., Themes of identity in modern literature" />
-                </div>
-                <div>
-                  <Label>Subject</Label>
-                  <Select value={subject} onValueChange={setSubject}>
-                    <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
-                    <SelectContent>
-                      {SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={startEssay} disabled={busy || !topic.trim() || !subject}>Begin</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => navigate("/join")}>
+            <KeyRound className="w-4 h-4 mr-2" />Join a Lesson
+          </Button>
         </div>
 
         {loading ? (
