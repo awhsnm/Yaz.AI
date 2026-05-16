@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      annotations: {
+        Row: {
+          color_code: string
+          comment_text: string
+          created_at: string
+          end_index: number
+          essay_id: string
+          id: string
+          start_index: number
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          color_code?: string
+          comment_text?: string
+          created_at?: string
+          end_index: number
+          essay_id: string
+          id?: string
+          start_index: number
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          color_code?: string
+          comment_text?: string
+          created_at?: string
+          end_index?: number
+          essay_id?: string
+          id?: string
+          start_index?: number
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annotations_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classrooms: {
         Row: {
           access_code: string
@@ -49,6 +93,8 @@ export type Database = {
       }
       essays: {
         Row: {
+          ai_checked_at: string | null
+          ai_probability: number | null
           classroom_id: string | null
           content: string
           created_at: string
@@ -60,6 +106,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_checked_at?: string | null
+          ai_probability?: number | null
           classroom_id?: string | null
           content?: string
           created_at?: string
@@ -71,6 +119,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_checked_at?: string | null
+          ai_probability?: number | null
           classroom_id?: string | null
           content?: string
           created_at?: string
@@ -94,6 +144,44 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluations: {
+        Row: {
+          created_at: string
+          essay_id: string
+          feedback: string
+          grade: string
+          id: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          essay_id: string
+          feedback?: string
+          grade?: string
+          id?: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          essay_id?: string
+          feedback?: string
+          grade?: string
+          id?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: true
+            referencedRelation: "essays"
             referencedColumns: ["id"]
           },
         ]
