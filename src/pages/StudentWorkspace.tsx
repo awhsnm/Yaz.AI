@@ -21,6 +21,7 @@ const StudentWorkspace = () => {
   const [essay, setEssay] = useState("");
   const [topic, setTopic] = useState("");
   const [subject, setSubject] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [chatHistory, setChatHistory] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [showExit, setShowExit] = useState(false);
@@ -43,6 +44,7 @@ const StudentWorkspace = () => {
       setEssay(e.content);
       setTopic(e.topic);
       setSubject(e.subject);
+      setIsSubmitted(!!e.is_submitted);
       lastSaved.current = e.content;
       const { data: m } = await supabase
         .from("messages")
@@ -62,7 +64,7 @@ const StudentWorkspace = () => {
 
   // Auto-save essay every 5s if changed
   useEffect(() => {
-    if (!essayId || loading) return;
+    if (!essayId || loading || isSubmitted) return;
     const i = setInterval(async () => {
       if (essay === lastSaved.current) return;
       const snapshot = essay;
@@ -70,7 +72,7 @@ const StudentWorkspace = () => {
       if (!error) lastSaved.current = snapshot;
     }, 5000);
     return () => clearInterval(i);
-  }, [essay, essayId, loading]);
+  }, [essay, essayId, loading, isSubmitted]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -83,10 +85,20 @@ const StudentWorkspace = () => {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || isSubmitted) return;
     const t = setInterval(() => setRemaining((r) => (r <= 1 ? 0 : r - 1)), 1000);
     return () => clearInterval(t);
-  }, [loading]);
+  }, [loading, isSubmitted]);
+
+  // Auto-submit when timer runs out
+  useEffect(() => {
+    if (loading || isSubmitted || remaining > 0) return;
+    (async () => {
+      await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
+      setIsSubmitted(true);
+      toast({ title: "Time's up", description: "Your essay was auto-submitted." });
+    })();
+  }, [remaining, loading, isSubmitted, essay, essayId, toast]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
@@ -113,17 +125,30 @@ const StudentWorkspace = () => {
             <BookOpen className="w-3 h-3" />
             <span className="truncate max-w-[260px]">{topic}</span>
           </div>
+          {isSubmitted && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 text-[10px] font-display font-semibold uppercase tracking-wide">
+              Status: Submitted
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
-          <div className={`flex items-center gap-1.5 text-xs font-display font-medium ${isTimeUp ? "text-destructive" : isLowTime ? "text-warning" : "text-muted-foreground"}`}>
-            <Clock className="w-3.5 h-3.5" />
-            {isTimeUp ? "Time's up" : formatTime(remaining)}
-          </div>
+          {!isSubmitted && (
+            <div className={`flex items-center gap-1.5 text-xs font-display font-medium ${isTimeUp ? "text-destructive" : isLowTime ? "text-warning" : "text-muted-foreground"}`}>
+              <Clock className="w-3.5 h-3.5" />
+              {isTimeUp ? "Time's up" : formatTime(remaining)}
+            </div>
+          )}
           <span className="text-xs text-muted-foreground font-display">{wordCount} words</span>
-          <Button variant="outline" size="sm" onClick={() => setShowExit(true)} className="font-display text-xs h-7">
-            <LogOut className="w-3 h-3 mr-1" />Submit & Exit
-          </Button>
+          {isSubmitted ? (
+            <Button variant="outline" size="sm" onClick={() => navigate("/student-dashboard")} className="font-display text-xs h-7">
+              <LogOut className="w-3 h-3 mr-1" />Back to dashboard
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setShowExit(true)} className="font-display text-xs h-7">
+              <LogOut className="w-3 h-3 mr-1" />Submit & Exit
+            </Button>
+          )}
         </div>
       </div>
 
@@ -134,8 +159,9 @@ const StudentWorkspace = () => {
               value={essay}
               onChange={(e) => setEssay(e.target.value)}
               onPaste={handlePaste}
+              readOnly={isSubmitted}
               placeholder={`Begin writing your essay on "${topic}"...`}
-              className="w-full h-full min-h-[calc(100vh-8rem)] resize-none bg-transparent focus-editor outline-none placeholder:text-muted-foreground/50"
+              className={`w-full h-full min-h-[calc(100vh-8rem)] resize-none bg-transparent focus-editor outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
               autoFocus
             />
           </div>
