@@ -9,6 +9,7 @@ import StudentWorkspace from "./pages/StudentWorkspace.tsx";
 import JoinLesson from "./pages/JoinLesson.tsx";
 import TeacherDashboard from "./pages/TeacherDashboard.tsx";
 import TeacherReview from "./pages/TeacherReview.tsx";
+import StudentFeedback from "./pages/StudentFeedback.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/essay/:id" element={<ProtectedRoute role="student"><StudentWorkspace /></ProtectedRoute>} />
             <Route path="/teacher-dashboard" element={<ProtectedRoute role="teacher"><TeacherDashboard /></ProtectedRoute>} />
             <Route path="/review/:id" element={<ProtectedRoute role="teacher"><TeacherReview /></ProtectedRoute>} />
+            <Route path="/feedback/:id" element={<ProtectedRoute role="student"><StudentFeedback /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

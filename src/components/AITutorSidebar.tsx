@@ -19,6 +19,7 @@ interface AITutorSidebarProps {
   currentDraft: string;
   restoredChatHistory?: Message[];
   onChatHistoryChange?: (history: Message[]) => void;
+  disabled?: boolean;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
@@ -29,7 +30,7 @@ const quickPrompts = [
   "How can I improve my last paragraph?",
 ];
 
-const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHistory, onChatHistoryChange }: AITutorSidebarProps) => {
+const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHistory, onChatHistoryChange, disabled = false }: AITutorSidebarProps) => {
   const welcomeMsg: Message = {
     id: "welcome",
     role: "assistant",
@@ -50,7 +51,7 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
   }, [messages, onChatHistoryChange]);
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isStreaming) return;
+    if (!text.trim() || isStreaming || disabled) return;
     if (!essayId) {
       toast({ title: "No active essay", description: "AI tutor requires an active essay.", variant: "destructive" });
       return;
@@ -218,7 +219,7 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
           <button
             key={prompt}
             onClick={() => sendMessage(prompt)}
-            disabled={isStreaming}
+            disabled={isStreaming || disabled}
             className="text-xs bg-muted hover:bg-accent text-muted-foreground px-2.5 py-1 rounded-full font-display transition-colors flex items-center gap-1 disabled:opacity-50"
           >
             <Lightbulb className="w-3 h-3" />
@@ -233,11 +234,11 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
-          placeholder="Ask for guidance..."
+          placeholder={disabled ? "Essay submitted — chat is closed" : "Ask for guidance..."}
           className="font-display text-sm"
-          disabled={isStreaming}
+          disabled={isStreaming || disabled}
         />
-        <Button size="icon" onClick={() => sendMessage(input)} disabled={!input.trim() || isStreaming}>
+        <Button size="icon" onClick={() => sendMessage(input)} disabled={!input.trim() || isStreaming || disabled}>
           <Send className="w-4 h-4" />
         </Button>
       </div>
