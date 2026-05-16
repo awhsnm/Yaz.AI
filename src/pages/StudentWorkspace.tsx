@@ -175,6 +175,7 @@ const StudentWorkspace = () => {
             currentDraft={essay}
             restoredChatHistory={chatHistory}
             onChatHistoryChange={setChatHistory}
+            disabled={isSubmitted}
           />
         </div>
       </div>
