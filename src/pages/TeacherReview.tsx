@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, BookOpen, MessageSquare, Sparkles, Save, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, BookOpen, MessageSquare, Sparkles, Save, Trash2, Highlighter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -50,10 +49,10 @@ const TeacherReview = () => {
 
   const [aiBusy, setAiBusy] = useState(false);
 
-  const [selection, setSelection] = useState<{ start: number; end: number; rect: DOMRect } | null>(null);
-  const [popOpen, setPopOpen] = useState(false);
+  const [selection, setSelection] = useState<{ start: number; end: number; preview: string } | null>(null);
   const [newComment, setNewComment] = useState("");
-  const [newColor, setNewColor] = useState(COLORS[0].code);
+  const [selectedColor, setSelectedColor] = useState(COLORS[0].code);
+  const [saving, setSaving] = useState(false);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -102,14 +101,24 @@ const TeacherReview = () => {
   }, []);
 
   const onMouseUp = useCallback(() => {
-    const off = getOffsetsFromSelection();
-    if (!off) { setSelection(null); return; }
-    const rect = window.getSelection()!.getRangeAt(0).getBoundingClientRect();
-    setSelection({ ...off, rect });
-  }, [getOffsetsFromSelection]);
+    // Defer to let the browser finalize the selection
+    setTimeout(() => {
+      const off = getOffsetsFromSelection();
+      if (!off || !essay) return;
+      setSelection({
+        start: off.start,
+        end: off.end,
+        preview: essay.content.slice(off.start, off.end),
+      });
+    }, 0);
+  }, [getOffsetsFromSelection, essay]);
 
   const addAnnotation = async () => {
-    if (!selection || !id || !user) return;
+    if (!selection || !id || !user) {
+      toast({ title: "Select text first", description: "Highlight a sentence in the essay before saving.", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
     const { data, error } = await supabase
       .from("annotations")
       .insert({
@@ -117,11 +126,12 @@ const TeacherReview = () => {
         teacher_id: user.id,
         start_index: selection.start,
         end_index: selection.end,
-        color_code: newColor,
+        color_code: selectedColor,
         comment_text: newComment.trim(),
       })
       .select("id, start_index, end_index, color_code, comment_text")
       .single();
+    setSaving(false);
     if (error) {
       toast({ title: "Could not add comment", description: error.message, variant: "destructive" });
       return;
@@ -129,8 +139,8 @@ const TeacherReview = () => {
     setAnnotations((prev) => [...prev, data as Annotation].sort((a, b) => a.start_index - b.start_index));
     setNewComment("");
     setSelection(null);
-    setPopOpen(false);
     window.getSelection()?.removeAllRanges();
+    toast({ title: "Comment saved" });
   };
 
   const deleteAnnotation = async (annId: string) => {
@@ -231,7 +241,7 @@ const TeacherReview = () => {
               <span className="text-xs text-muted-foreground font-normal ml-2">Select text to add a comment</span>
             </h2>
             <div
-              className="bg-card border border-border rounded-lg p-5 min-h-[300px] relative"
+              className="bg-card border border-border rounded-lg p-5 min-h-[300px]"
               onMouseUp={onMouseUp}
             >
               <AnnotatedText
@@ -241,49 +251,6 @@ const TeacherReview = () => {
                 onMarkClick={scrollToSidebar}
                 containerRef={contentRef}
               />
-              {selection && (
-                <Popover open={popOpen} onOpenChange={(o) => { setPopOpen(o); if (!o) setSelection(null); }}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      size="sm"
-                      className="fixed z-50 font-display shadow-lg"
-                      style={{
-                        top: `${selection.rect.bottom + window.scrollY + 6}px`,
-                        left: `${selection.rect.left + window.scrollX}px`,
-                      }}
-                      onClick={() => setPopOpen(true)}
-                    >
-                      <Plus className="w-3.5 h-3.5 mr-1" />Add Comment
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-72" align="start">
-                    <div className="space-y-3">
-                      <p className="text-xs font-display text-muted-foreground">
-                        "{essay.content.slice(selection.start, selection.end).slice(0, 80)}{selection.end - selection.start > 80 ? "…" : ""}"
-                      </p>
-                      <div className="flex gap-1.5">
-                        {COLORS.map((c) => (
-                          <button
-                            key={c.code}
-                            onClick={() => setNewColor(c.code)}
-                            style={{ backgroundColor: c.code }}
-                            className={`w-6 h-6 rounded-full border-2 ${newColor === c.code ? "border-foreground" : "border-transparent"}`}
-                            aria-label={c.name}
-                          />
-                        ))}
-                      </div>
-                      <Textarea
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Your comment..."
-                        className="font-display text-sm min-h-[80px]"
-                        autoFocus
-                      />
-                      <Button size="sm" onClick={addAnnotation} className="w-full font-display">Save Comment</Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
             </div>
           </div>
 
@@ -313,6 +280,60 @@ const TeacherReview = () => {
 
         {/* Sidebar: comments + chat */}
         <div className="space-y-6">
+          {/* New Comment composer */}
+          <div>
+            <h2 className="font-display font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Highlighter className="w-4 h-4 text-primary" />New Comment
+            </h2>
+            <div className={`bg-card border rounded-lg p-4 space-y-3 transition-colors ${selection ? "border-primary" : "border-border"}`}>
+              {selection ? (
+                <div className="rounded-md p-2 text-xs font-display italic" style={{ backgroundColor: selectedColor }}>
+                  "{selection.preview.slice(0, 120)}{selection.preview.length > 120 ? "…" : ""}"
+                  <button
+                    onClick={() => { setSelection(null); window.getSelection()?.removeAllRanges(); }}
+                    className="ml-2 align-middle text-foreground/60 hover:text-foreground"
+                    aria-label="Clear selection"
+                  >
+                    <X className="inline w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground font-display">
+                  Select text in the essay to start a comment.
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-display text-muted-foreground">Color:</span>
+                {COLORS.map((c) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => setSelectedColor(c.code)}
+                    style={{ backgroundColor: c.code }}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${selectedColor === c.code ? "border-foreground scale-110" : "border-transparent"}`}
+                    aria-label={c.name}
+                    aria-pressed={selectedColor === c.code}
+                  />
+                ))}
+              </div>
+              <Textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Your comment..."
+                className="font-display text-sm min-h-[80px]"
+                disabled={!selection}
+              />
+              <Button
+                size="sm"
+                onClick={addAnnotation}
+                disabled={!selection || saving}
+                className="w-full font-display"
+              >
+                {saving ? "Saving..." : "Save Comment"}
+              </Button>
+            </div>
+          </div>
+
           <div>
             <h2 className="font-display font-semibold text-foreground mb-3">Comments ({annotations.length})</h2>
             <div ref={sidebarRef} className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
