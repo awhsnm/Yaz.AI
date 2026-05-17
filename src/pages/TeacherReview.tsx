@@ -394,6 +394,105 @@ const TeacherReview = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating annotation toolbar */}
+      {selection && (
+        <div
+          ref={floatingRef}
+          role="dialog"
+          aria-label="Add annotation"
+          onMouseDown={(e) => e.stopPropagation()}
+          style={{
+            position: "fixed",
+            left: menuPos?.left ?? -9999,
+            top: menuPos?.top ?? -9999,
+            visibility: menuPos ? "visible" : "hidden",
+            zIndex: 60,
+          }}
+          className="bg-card border border-border rounded-lg shadow-xl p-2 animate-in fade-in zoom-in-95"
+        >
+          {!composerOpen ? (
+            <div className="flex items-center gap-1.5">
+              {COLORS.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => setSelectedColor(c.code)}
+                  style={{ backgroundColor: c.code }}
+                  className={`w-6 h-6 rounded-full border-2 transition-transform ${
+                    selectedColor === c.code ? "border-primary scale-110" : "border-transparent hover:scale-105"
+                  }`}
+                  aria-label={c.name}
+                  aria-pressed={selectedColor === c.code}
+                />
+              ))}
+              <div className="w-px h-6 bg-border mx-1" />
+              <Button
+                size="sm"
+                onClick={() => setComposerOpen(true)}
+                className="font-display h-8"
+              >
+                <MessageSquarePlus className="w-3.5 h-3.5 mr-1" />Add Comment
+              </Button>
+              <button
+                onClick={closeMenu}
+                aria-label="Close"
+                className="ml-0.5 p-1 text-muted-foreground hover:text-foreground rounded"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="w-72 space-y-2 p-1">
+              <div
+                className="rounded px-2 py-1 text-xs font-display italic"
+                style={{ backgroundColor: selectedColor }}
+              >
+                "{selection.preview.slice(0, 100)}{selection.preview.length > 100 ? "…" : ""}"
+              </div>
+              <Textarea
+                ref={textareaRef}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write your comment..."
+                className="font-display text-sm min-h-[80px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    addAnnotation();
+                  } else if (e.key === "Escape") {
+                    closeMenu();
+                  }
+                }}
+              />
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => setSelectedColor(c.code)}
+                      style={{ backgroundColor: c.code }}
+                      className={`w-5 h-5 rounded-full border-2 ${
+                        selectedColor === c.code ? "border-primary" : "border-transparent"
+                      }`}
+                      aria-label={c.name}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="ghost" onClick={closeMenu} className="font-display h-8">
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={addAnnotation} disabled={saving} className="font-display h-8">
+                    {saving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
