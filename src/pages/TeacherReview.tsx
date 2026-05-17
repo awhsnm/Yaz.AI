@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, useLayoutEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, BookOpen, MessageSquare, Sparkles, Save, Trash2, Highlighter, X } from "lucide-react";
+import { ArrowLeft, BookOpen, MessageSquare, Sparkles, Save, Trash2, MessageSquarePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,13 +49,23 @@ const TeacherReview = () => {
 
   const [aiBusy, setAiBusy] = useState(false);
 
-  const [selection, setSelection] = useState<{ start: number; end: number; preview: string } | null>(null);
+  const [selection, setSelection] = useState<{
+    start: number;
+    end: number;
+    preview: string;
+    anchorX: number; // viewport px
+    anchorY: number; // viewport px (top of selection)
+  } | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLORS[0].code);
   const [saving, setSaving] = useState(false);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const floatingRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -105,13 +115,64 @@ const TeacherReview = () => {
     setTimeout(() => {
       const off = getOffsetsFromSelection();
       if (!off || !essay) return;
+      const sel = window.getSelection();
+      const rect = sel?.getRangeAt(0).getBoundingClientRect();
+      if (!rect) return;
       setSelection({
         start: off.start,
         end: off.end,
         preview: essay.content.slice(off.start, off.end),
+        anchorX: rect.left + rect.width / 2,
+        anchorY: rect.top,
       });
+      setComposerOpen(false);
+      setNewComment("");
     }, 0);
   }, [getOffsetsFromSelection, essay]);
+
+  const closeMenu = useCallback(() => {
+    setSelection(null);
+    setComposerOpen(false);
+    setNewComment("");
+    setMenuPos(null);
+    window.getSelection()?.removeAllRanges();
+  }, []);
+
+  // Position the floating menu after it renders, clamped to viewport
+  useLayoutEffect(() => {
+    if (!selection || !floatingRef.current) {
+      setMenuPos(null);
+      return;
+    }
+    const el = floatingRef.current;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const margin = 8;
+    let left = selection.anchorX - w / 2;
+    let top = selection.anchorY - h - 10; // above the selection
+    if (top < margin) top = selection.anchorY + 24; // flip below
+    left = Math.max(margin, Math.min(window.innerWidth - w - margin, left));
+    top = Math.max(margin, Math.min(window.innerHeight - h - margin, top));
+    setMenuPos({ left, top });
+  }, [selection, composerOpen]);
+
+  // Dismiss on outside click
+  useEffect(() => {
+    if (!selection) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (floatingRef.current?.contains(target)) return;
+      if (contentRef.current?.contains(target)) return; // let new selection replace it
+      closeMenu();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [selection, closeMenu]);
+
+  // Autofocus textarea when composer opens
+  useEffect(() => {
+    if (composerOpen) textareaRef.current?.focus();
+  }, [composerOpen]);
 
   const addAnnotation = async () => {
     if (!selection || !id || !user) {
@@ -137,9 +198,7 @@ const TeacherReview = () => {
       return;
     }
     setAnnotations((prev) => [...prev, data as Annotation].sort((a, b) => a.start_index - b.start_index));
-    setNewComment("");
-    setSelection(null);
-    window.getSelection()?.removeAllRanges();
+    closeMenu();
     toast({ title: "Comment saved" });
   };
 
@@ -280,60 +339,6 @@ const TeacherReview = () => {
 
         {/* Sidebar: comments + chat */}
         <div className="space-y-6">
-          {/* New Comment composer */}
-          <div>
-            <h2 className="font-display font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Highlighter className="w-4 h-4 text-primary" />New Comment
-            </h2>
-            <div className={`bg-card border rounded-lg p-4 space-y-3 transition-colors ${selection ? "border-primary" : "border-border"}`}>
-              {selection ? (
-                <div className="rounded-md p-2 text-xs font-display italic" style={{ backgroundColor: selectedColor }}>
-                  "{selection.preview.slice(0, 120)}{selection.preview.length > 120 ? "…" : ""}"
-                  <button
-                    onClick={() => { setSelection(null); window.getSelection()?.removeAllRanges(); }}
-                    className="ml-2 align-middle text-foreground/60 hover:text-foreground"
-                    aria-label="Clear selection"
-                  >
-                    <X className="inline w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground font-display">
-                  Select text in the essay to start a comment.
-                </p>
-              )}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-display text-muted-foreground">Color:</span>
-                {COLORS.map((c) => (
-                  <button
-                    key={c.code}
-                    type="button"
-                    onClick={() => setSelectedColor(c.code)}
-                    style={{ backgroundColor: c.code }}
-                    className={`w-6 h-6 rounded-full border-2 transition-all ${selectedColor === c.code ? "border-foreground scale-110" : "border-transparent"}`}
-                    aria-label={c.name}
-                    aria-pressed={selectedColor === c.code}
-                  />
-                ))}
-              </div>
-              <Textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Your comment..."
-                className="font-display text-sm min-h-[80px]"
-                disabled={!selection}
-              />
-              <Button
-                size="sm"
-                onClick={addAnnotation}
-                disabled={!selection || saving}
-                className="w-full font-display"
-              >
-                {saving ? "Saving..." : "Save Comment"}
-              </Button>
-            </div>
-          </div>
-
           <div>
             <h2 className="font-display font-semibold text-foreground mb-3">Comments ({annotations.length})</h2>
             <div ref={sidebarRef} className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
