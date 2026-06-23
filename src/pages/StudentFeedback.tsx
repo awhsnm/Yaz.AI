@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Award, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ const StudentFeedback = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [essay, setEssay] = useState<Essay | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const commentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
 
@@ -34,6 +36,12 @@ const StudentFeedback = () => {
 
   const wc = essay.content.trim().split(/\s+/).filter(Boolean).length;
 
+  const focusComment = (id: string) => {
+    setActiveId(id);
+    const el = commentRefs.current[id];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-card">
@@ -51,7 +59,16 @@ const StudentFeedback = () => {
         <div className="lg:col-span-2">
           <h2 className="font-display font-semibold text-foreground mb-3 flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" />Your essay (with teacher highlights)</h2>
           <div className="bg-card border border-border rounded-lg p-5">
-            <AnnotatedText content={essay.content} annotations={annotations} />
+            {essay.content ? (
+              <AnnotatedText
+                content={essay.content}
+                annotations={annotations}
+                activeId={activeId}
+                onMarkClick={focusComment}
+              />
+            ) : (
+              <p className="text-sm font-display text-muted-foreground italic">This essay has no content.</p>
+            )}
           </div>
         </div>
 
@@ -81,7 +98,12 @@ const StudentFeedback = () => {
             <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
               {annotations.length === 0 && <p className="text-sm text-muted-foreground font-display">No comments.</p>}
               {annotations.map((a) => (
-                <div key={a.id} className="bg-card border border-border rounded-lg p-3">
+                <div
+                  key={a.id}
+                  ref={(el) => { commentRefs.current[a.id] = el; }}
+                  onClick={() => setActiveId(a.id)}
+                  className={`bg-card border rounded-lg p-3 cursor-pointer transition-colors ${activeId === a.id ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                >
                   <div className="flex items-start gap-2">
                     <span className="w-3 h-3 rounded-full mt-1 shrink-0" style={{ backgroundColor: a.color_code }} />
                     <div className="flex-1 min-w-0">

@@ -84,7 +84,7 @@ const StudentDashboard = () => {
               return (
                 <button
                   key={e.id}
-                  onClick={() => navigate(e.evaluated ? `/feedback/${e.id}` : `/essay/${e.id}`)}
+                  onClick={() => navigate(e.is_submitted || e.evaluated ? `/feedback/${e.id}` : `/essay/${e.id}`)}
                   className="bg-card border border-border rounded-lg p-4 text-left hover:border-primary transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
