@@ -58,6 +58,27 @@ export type Database = {
           },
         ]
       }
+      bug_reports: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       classrooms: {
         Row: {
           access_code: string
@@ -220,6 +241,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birthday: string | null
           created_at: string
           full_name: string | null
           id: string
@@ -228,6 +250,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          birthday?: string | null
           created_at?: string
           full_name?: string | null
           id: string
@@ -236,6 +259,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          birthday?: string | null
           created_at?: string
           full_name?: string | null
           id?: string

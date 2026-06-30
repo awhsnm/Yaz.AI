@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeyRound, ArrowLeft, BookOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ const JoinLesson = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [code, setCode] = useState("");
   const [classroomId, setClassroomId] = useState<string | null>(null);
@@ -28,7 +30,7 @@ const JoinLesson = () => {
     setError("");
     const trimmed = code.trim().toUpperCase();
     if (trimmed.length !== 6) {
-      setError("Code must be exactly 6 characters.");
+      setError(t("join.codeLen"));
       return;
     }
     setBusy(true);
@@ -39,7 +41,7 @@ const JoinLesson = () => {
       .maybeSingle();
     setBusy(false);
     if (err || !data || !data.is_active) {
-      setError("Invalid or inactive code. Ask your teacher for the current lesson code.");
+      setError(t("join.invalid"));
       return;
     }
     setClassroomId(data.id);
@@ -56,7 +58,7 @@ const JoinLesson = () => {
       .single();
     setBusy(false);
     if (err || !data) {
-      toast({ title: "Could not start", description: err?.message, variant: "destructive" });
+      toast({ title: t("join.couldNotStart"), description: err?.message, variant: "destructive" });
       return;
     }
     navigate(`/essay/${data.id}`);
@@ -69,7 +71,7 @@ const JoinLesson = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/student-dashboard")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="font-display font-bold text-foreground">Join a Lesson</h1>
+          <h1 className="font-display font-bold text-foreground">{t("join.title")}</h1>
         </div>
       </div>
 
@@ -83,10 +85,10 @@ const JoinLesson = () => {
                 </div>
               </div>
               <h2 className="text-center font-display font-bold text-xl text-foreground mb-1">
-                Enter Teacher's Access Code
+                {t("join.enterCode")}
               </h2>
               <p className="text-center text-sm text-muted-foreground font-display mb-6">
-                Your teacher will share a 6-character code for this lesson.
+                {t("join.helper")}
               </p>
               <Input
                 value={code}
@@ -99,7 +101,7 @@ const JoinLesson = () => {
               />
               {error && <p className="text-destructive text-sm font-display mt-3 text-center">{error}</p>}
               <Button onClick={validateCode} disabled={busy || code.trim().length !== 6} className="w-full mt-6 font-display">
-                Validate Code
+                {t("join.validate")}
               </Button>
             </div>
           ) : (
@@ -110,20 +112,20 @@ const JoinLesson = () => {
                 </div>
               </div>
               <h2 className="text-center font-display font-bold text-xl text-foreground mb-1">
-                Joined: {classroomName}
+                {t("join.joined")}: {classroomName}
               </h2>
               <p className="text-center text-sm text-muted-foreground font-display mb-6">
-                Set your essay topic to begin the 45-minute session.
+                {t("join.setTopic")}
               </p>
               <div className="space-y-3">
                 <div>
-                  <Label className="font-display">Topic</Label>
-                  <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Essay topic" />
+                  <Label className="font-display">{t("join.topic")}</Label>
+                  <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t("join.topicPh")} />
                 </div>
                 <div>
-                  <Label className="font-display">Subject</Label>
+                  <Label className="font-display">{t("join.subject")}</Label>
                   <Select value={subject} onValueChange={setSubject}>
-                    <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("join.selectSubject")} /></SelectTrigger>
                     <SelectContent>
                       {SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
@@ -134,7 +136,7 @@ const JoinLesson = () => {
                   disabled={busy || !topic.trim() || !subject}
                   className="w-full font-display"
                 >
-                  Start 45-Minute Session
+                  {t("join.start")}
                 </Button>
               </div>
             </div>

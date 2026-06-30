@@ -13,6 +13,7 @@ import StudentFeedback from "./pages/StudentFeedback.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
+import { SettingsProvider } from "./contexts/SettingsContext";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +24,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <SettingsProvider>
+            <Routes>
             <Route path="/" element={<Auth />} />
             <Route path="/student-dashboard" element={<ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>} />
             <Route path="/join" element={<ProtectedRoute role="student"><JoinLesson /></ProtectedRoute>} />
@@ -32,7 +34,8 @@ const App = () => (
             <Route path="/review/:id" element={<ProtectedRoute role="teacher"><TeacherReview /></ProtectedRoute>} />
             <Route path="/feedback/:id" element={<ProtectedRoute role="student"><StudentFeedback /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </SettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

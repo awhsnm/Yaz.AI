@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Shield, LogOut, Clock, BookOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
 import ExitModal from "@/components/ExitModal";
@@ -17,6 +18,7 @@ const StudentWorkspace = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [essay, setEssay] = useState("");
   const [topic, setTopic] = useState("");
@@ -101,21 +103,21 @@ const StudentWorkspace = () => {
     (async () => {
       await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
       setIsSubmitted(true);
-      toast({ title: "Time's up", description: "Your essay was auto-submitted." });
+      toast({ title: t("workspace.timeUp"), description: t("workspace.autoSubmitted") });
     })();
-  }, [remaining, loading, isSubmitted, essay, essayId, toast]);
+  }, [remaining, loading, isSubmitted, essay, essayId, toast, t]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
-    toast({ title: "Paste disabled", description: "Write in your own words.", variant: "destructive" });
-  }, [toast]);
+    toast({ title: t("workspace.pasteOff"), description: t("workspace.pasteHint"), variant: "destructive" });
+  }, [toast, t]);
 
   const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   const isTimeUp = remaining === 0;
   const isLowTime = remaining <= 300 && remaining > 0;
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-display">Loading session...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-display">{t("workspace.loadingSession")}</div>;
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -123,7 +125,7 @@ const StudentWorkspace = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <Shield className="w-4 h-4 text-success" />
-            <span className="text-xs font-display font-medium text-success">Focus Mode</span>
+            <span className="text-xs font-display font-medium text-success">{t("workspace.focusMode")}</span>
           </div>
           <span className="text-xs text-muted-foreground font-display">|</span>
           <div className="flex items-center gap-1 text-xs text-muted-foreground font-display">
@@ -132,7 +134,7 @@ const StudentWorkspace = () => {
           </div>
           {isSubmitted && (
             <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 text-[10px] font-display font-semibold uppercase tracking-wide">
-              Status: Submitted
+              {t("workspace.statusSubmitted")}
             </span>
           )}
         </div>
@@ -141,17 +143,17 @@ const StudentWorkspace = () => {
           {!isSubmitted && (
             <div className={`flex items-center gap-1.5 text-xs font-display font-medium ${isTimeUp ? "text-destructive" : isLowTime ? "text-warning" : "text-muted-foreground"}`}>
               <Clock className="w-3.5 h-3.5" />
-              {isTimeUp ? "Time's up" : formatTime(remaining)}
+              {isTimeUp ? t("workspace.timeUp") : formatTime(remaining)}
             </div>
           )}
-          <span className="text-xs text-muted-foreground font-display">{wordCount} words</span>
+          <span className="text-xs text-muted-foreground font-display">{wordCount} {t("common.words")}</span>
           {isSubmitted ? (
             <Button variant="outline" size="sm" onClick={() => navigate("/student-dashboard")} className="font-display text-xs h-7">
-              <LogOut className="w-3 h-3 mr-1" />Back to dashboard
+              <LogOut className="w-3 h-3 mr-1" />{t("workspace.back")}
             </Button>
           ) : (
             <Button variant="outline" size="sm" onClick={() => setShowExit(true)} className="font-display text-xs h-7">
-              <LogOut className="w-3 h-3 mr-1" />Submit & Exit
+              <LogOut className="w-3 h-3 mr-1" />{t("workspace.submitExit")}
             </Button>
           )}
         </div>
@@ -165,7 +167,7 @@ const StudentWorkspace = () => {
               onChange={(e) => setEssay(e.target.value)}
               onPaste={handlePaste}
               readOnly={isSubmitted}
-              placeholder={`Begin writing your essay on "${topic}"...`}
+              placeholder={t("workspace.begin", { topic })}
               className={`w-full h-full min-h-[calc(100vh-8rem)] resize-none bg-transparent focus-editor outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
               autoFocus
             />

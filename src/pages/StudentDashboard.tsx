@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { KeyRound, BookOpen, LogOut, FileText, CheckCircle2, Clock, Award } from "lucide-react";
+import { KeyRound, BookOpen, FileText, CheckCircle2, Clock, Award } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import UserMenu from "@/components/UserMenu";
+import BirthdayOverlay from "@/components/BirthdayOverlay";
 
 interface Essay {
   id: string;
@@ -16,15 +19,24 @@ interface Essay {
 }
 
 const StudentDashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [essays, setEssays] = useState<Essay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fullName, setFullName] = useState<string>("");
 
   useEffect(() => {
     if (!user) return;
     (async () => {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      setFullName(prof?.full_name ?? "");
+
       const { data } = await supabase
         .from("essays")
         .select("id, topic, subject, content, is_submitted, updated_at")
@@ -45,8 +57,17 @@ const StudentDashboard = () => {
     })();
   }, [user]);
 
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return t("greet.morning");
+    if (h < 18) return t("greet.day");
+    return t("greet.evening");
+  };
+  const displayName = fullName || user?.email?.split("@")[0] || "";
+
   return (
     <div className="min-h-screen bg-background">
+      <BirthdayOverlay />
       <div className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -54,28 +75,34 @@ const StudentDashboard = () => {
               <BookOpen className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-display font-bold text-foreground">My Essays</h1>
+              <h1 className="font-display font-bold text-foreground">{t("dashboard.title")}</h1>
               <p className="text-xs text-muted-foreground font-display">{user?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut}><LogOut className="w-4 h-4 mr-2" />Sign out</Button>
+          <UserMenu />
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="mb-6">
+          <h2 className="font-display font-bold text-2xl text-foreground">
+            {greeting()}{displayName ? `, ${displayName}` : ""}!
+          </h2>
+        </div>
+
         <div className="flex items-center justify-between mb-6">
-          <h2 className="font-display font-semibold text-foreground">Drafts & Submissions</h2>
+          <h2 className="font-display font-semibold text-foreground">{t("dashboard.drafts")}</h2>
           <Button onClick={() => navigate("/join")}>
-            <KeyRound className="w-4 h-4 mr-2" />Join a Lesson
+            <KeyRound className="w-4 h-4 mr-2" />{t("dashboard.joinLesson")}
           </Button>
         </div>
 
         {loading ? (
-          <p className="text-muted-foreground font-display">Loading...</p>
+          <p className="text-muted-foreground font-display">{t("common.loading")}</p>
         ) : essays.length === 0 ? (
           <div className="bg-card border border-border rounded-lg p-10 text-center">
             <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground font-display">No essays yet. Start your first draft.</p>
+            <p className="text-muted-foreground font-display">{t("dashboard.noEssays")}</p>
           </div>
         ) : (
           <div className="grid gap-3">
@@ -90,15 +117,15 @@ const StudentDashboard = () => {
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <h3 className="font-display font-semibold text-foreground truncate">{e.topic || "Untitled"}</h3>
-                      <p className="text-xs text-muted-foreground font-display mt-0.5">{e.subject} • {wc} words</p>
+                      <p className="text-xs text-muted-foreground font-display mt-0.5">{e.subject} • {wc} {t("common.words")}</p>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-display shrink-0">
                       {e.evaluated ? (
-                        <span className="flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 font-semibold"><Award className="w-3.5 h-3.5" />Evaluated — View Feedback</span>
+                        <span className="flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 font-semibold"><Award className="w-3.5 h-3.5" />{t("dashboard.evaluated")}</span>
                       ) : e.is_submitted ? (
-                        <span className="flex items-center gap-1 text-success"><CheckCircle2 className="w-3.5 h-3.5" />Submitted</span>
+                        <span className="flex items-center gap-1 text-success"><CheckCircle2 className="w-3.5 h-3.5" />{t("dashboard.submitted")}</span>
                       ) : (
-                        <span className="flex items-center gap-1 text-muted-foreground"><Clock className="w-3.5 h-3.5" />Draft</span>
+                        <span className="flex items-center gap-1 text-muted-foreground"><Clock className="w-3.5 h-3.5" />{t("dashboard.draft")}</span>
                       )}
                     </div>
                   </div>
