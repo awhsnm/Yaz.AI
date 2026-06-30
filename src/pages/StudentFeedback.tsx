@@ -57,7 +57,7 @@ const StudentFeedback = () => {
 
       <div className="max-w-6xl mx-auto px-6 py-6 grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <h2 className="font-display font-semibold text-foreground mb-3 flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" />Your essay (with teacher highlights)</h2>
+          <h2 className="font-display font-semibold text-foreground mb-3 flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" />Your essay (with teacher's feedback)</h2>
           <div className="bg-card border border-border rounded-lg p-5">
             {essay.content ? (
               <AnnotatedText
