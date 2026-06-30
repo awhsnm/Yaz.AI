@@ -41,6 +41,11 @@ const StudentWorkspace = () => {
         navigate("/student-dashboard");
         return;
       }
+      // Submitted essays are read-only with annotations — route to the feedback viewer.
+      if (e.is_submitted) {
+        navigate(`/feedback/${essayId}`, { replace: true });
+        return;
+      }
       setEssay(e.content);
       setTopic(e.topic);
       setSubject(e.subject);
