@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, LogOut } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +25,7 @@ const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => 
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleExit = async () => {
     setError("");
@@ -42,7 +44,7 @@ const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => 
 
     if (!e?.classroom_id) {
       setBusy(false);
-      setError("This essay is not linked to a lesson.");
+      setError(t("exit.wrong"));
       return;
     }
 
@@ -55,7 +57,7 @@ const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => 
     setBusy(false);
 
     if (!c?.exit_password || exitPassword.trim().toUpperCase() !== c.exit_password.toUpperCase()) {
-      setError("Invalid exit password. Ask your teacher to enter or approve it.");
+      setError(t("exit.wrong"));
       return;
     }
 
@@ -72,22 +74,22 @@ const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => 
               <Lock className="w-6 h-6 text-primary" />
             </div>
           </div>
-          <DialogTitle className="text-center font-display">Submit & Exit</DialogTitle>
+          <DialogTitle className="text-center font-display">{t("exit.title")}</DialogTitle>
           <DialogDescription className="text-center font-display">
-            Enter the exit password provided by your teacher to submit your essay and leave the session.
+            {t("exit.body")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 mt-2">
           <div className="bg-muted rounded-lg p-3">
             <p className="text-xs text-muted-foreground font-display">
-              Word count: <span className="font-semibold text-foreground">{essayContent.trim().split(/\s+/).filter(Boolean).length}</span>
+              {t("common.words")}: <span className="font-semibold text-foreground">{essayContent.trim().split(/\s+/).filter(Boolean).length}</span>
             </p>
           </div>
 
           <Input
             type="password"
-            placeholder="Exit password"
+            placeholder={t("exit.pw")}
             value={exitPassword}
             onChange={(e) => { setExitPassword(e.target.value); setError(""); }}
             onKeyDown={(e) => e.key === "Enter" && handleExit()}
@@ -98,7 +100,7 @@ const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => 
 
           <Button onClick={handleExit} disabled={busy} className="w-full font-display">
             <LogOut className="w-4 h-4 mr-2" />
-            Submit Essay & Exit
+            {t("exit.submit")}
           </Button>
         </div>
       </DialogContent>
