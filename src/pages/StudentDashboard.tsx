@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { KeyRound, BookOpen, FileText, CheckCircle2, Clock, Award } from "lucide-react";
+import { BookOpen, FileText, CheckCircle2, Clock, Award } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import UserMenu from "@/components/UserMenu";
 import BirthdayOverlay from "@/components/BirthdayOverlay";
+import ModeCards from "@/components/ModeCards";
 
 interface Essay {
   id: string;
@@ -90,11 +90,10 @@ const StudentDashboard = () => {
           </h2>
         </div>
 
-        <div className="flex items-center justify-between mb-6">
+        <ModeCards />
+
+        <div className="flex items-center justify-between mb-4">
           <h2 className="font-display font-semibold text-foreground">{t("dashboard.drafts")}</h2>
-          <Button onClick={() => navigate("/join")}>
-            <KeyRound className="w-4 h-4 mr-2" />{t("dashboard.joinLesson")}
-          </Button>
         </div>
 
         {loading ? (

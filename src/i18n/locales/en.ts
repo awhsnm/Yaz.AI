@@ -146,6 +146,28 @@ const en = {
     wrong: "Incorrect exit password.",
     submitted: "Essay submitted",
   },
+  modes: {
+    classroomTitle: "Classroom Mode",
+    classroomDesc: "Write an essay assigned by your teacher with AI Coach support.",
+    classroomBadge: "Passcode + AI Coach",
+    soloTitle: "Solo Practice",
+    soloDesc: "Practice independently for exams or self-testing — no AI chat.",
+    soloBadge: "No AI Chat",
+    brainTitle: "Brainstorm & Generate Topic",
+    brainDesc: "Not sure what to write about? Share your thoughts and get custom prompts.",
+    brainBadge: "AI-Suggested Topics",
+    soloModalDesc: "Set your own topic. You'll write in focus mode without the AI tutor.",
+    startSolo: "Start Solo Session",
+    brainModalDesc: "Write anything on your mind. We'll turn it into three polished essay options.",
+    brainInputLabel: "Your thoughts",
+    brainInputPh: "e.g. I'm curious how summer affects a person's discipline...",
+    generate: "Generate 3 Topics",
+    generating: "Thinking...",
+    pickOne: "Pick a topic to start writing",
+    genFailed: "Could not generate topics",
+    genEmpty: "No topics returned. Try adding more detail.",
+    couldNotStart: "Could not start essay",
+  },
 };
 export default en;
 export type Dict = typeof en;

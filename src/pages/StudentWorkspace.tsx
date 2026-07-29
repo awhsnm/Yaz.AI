@@ -24,6 +24,7 @@ const StudentWorkspace = () => {
   const [topic, setTopic] = useState("");
   const [subject, setSubject] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [soloMode, setSoloMode] = useState(false);
   const [chatHistory, setChatHistory] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [showExit, setShowExit] = useState(false);
@@ -52,6 +53,7 @@ const StudentWorkspace = () => {
       setTopic(e.topic);
       setSubject(e.subject);
       setIsSubmitted(!!e.is_submitted);
+      setSoloMode(e.classroom_id == null);
       lastSaved.current = e.content;
       const { data: m } = await supabase
         .from("messages")
@@ -160,7 +162,7 @@ const StudentWorkspace = () => {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        <div className="flex-[7] flex justify-center overflow-y-auto p-8">
+        <div className={`${soloMode ? "flex-1" : "flex-[7]"} flex justify-center overflow-y-auto p-8`}>
           <div className="w-full max-w-[800px]">
             <textarea
               value={essay}
@@ -174,17 +176,19 @@ const StudentWorkspace = () => {
           </div>
         </div>
 
-        <div className="flex-[3] min-w-[300px] max-w-[400px]">
-          <AITutorSidebar
-            essayId={essayId!}
-            topic={topic}
-            subject={subject}
-            currentDraft={essay}
-            restoredChatHistory={chatHistory}
-            onChatHistoryChange={setChatHistory}
-            disabled={isSubmitted}
-          />
-        </div>
+        {!soloMode && (
+          <div className="flex-[3] min-w-[300px] max-w-[400px]">
+            <AITutorSidebar
+              essayId={essayId!}
+              topic={topic}
+              subject={subject}
+              currentDraft={essay}
+              restoredChatHistory={chatHistory}
+              onChatHistoryChange={setChatHistory}
+              disabled={isSubmitted}
+            />
+          </div>
+        )}
       </div>
 
       <ExitModal open={showExit} onClose={() => setShowExit(false)} essayContent={essay} essayId={essayId} />
