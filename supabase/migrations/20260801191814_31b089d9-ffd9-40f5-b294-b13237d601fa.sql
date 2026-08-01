@@ -1,0 +1,16 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.essays TO authenticated;
+GRANT ALL ON public.essays TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+GRANT SELECT ON public.user_roles TO authenticated;
+GRANT ALL ON public.user_roles TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.classrooms TO authenticated;
+GRANT ALL ON public.classrooms TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.annotations TO authenticated;
+GRANT ALL ON public.annotations TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.evaluations TO authenticated;
+GRANT ALL ON public.evaluations TO service_role;
+GRANT SELECT, INSERT ON public.messages TO authenticated;
+GRANT ALL ON public.messages TO service_role;
+GRANT SELECT, INSERT ON public.bug_reports TO authenticated;
+GRANT ALL ON public.bug_reports TO service_role;
