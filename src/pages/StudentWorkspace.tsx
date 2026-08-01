@@ -105,20 +105,20 @@ const StudentWorkspace = () => {
   }, []);
 
   useEffect(() => {
-    if (loading || isSubmitted) return;
+    if (loading || isSubmitted || mode === "brainstorm") return;
     const t = setInterval(() => setRemaining((r) => (r <= 1 ? 0 : r - 1)), 1000);
     return () => clearInterval(t);
-  }, [loading, isSubmitted]);
+  }, [loading, isSubmitted, mode]);
 
   // Auto-submit when timer runs out
   useEffect(() => {
-    if (loading || isSubmitted || remaining > 0) return;
+    if (loading || isSubmitted || remaining > 0 || mode === "brainstorm") return;
     (async () => {
       await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
       setIsSubmitted(true);
       toast({ title: t("workspace.timeUp"), description: t("workspace.autoSubmitted") });
     })();
-  }, [remaining, loading, isSubmitted, essay, essayId, toast, t]);
+  }, [remaining, loading, isSubmitted, essay, essayId, toast, t, mode]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
@@ -129,6 +129,32 @@ const StudentWorkspace = () => {
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   const isTimeUp = remaining === 0;
   const isLowTime = remaining <= 300 && remaining > 0;
+  const timed = mode !== "brainstorm";
+
+  const saveDraft = async (leave: boolean) => {
+    if (!essayId) return;
+    setSaving(true);
+    await supabase.from("essays").update({ content: essay, is_submitted: false }).eq("id", essayId);
+    lastSaved.current = essay;
+    setSaving(false);
+    setShowLowWords(false);
+    if (leave) navigate("/student-dashboard");
+    else toast({ title: t("workspace.draftSaved", "Draft saved") });
+  };
+
+  const finalSubmit = async () => {
+    if (!essayId) return;
+    setSaving(true);
+    await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
+    setSaving(false);
+    navigate("/student-dashboard");
+  };
+
+  const requestSubmit = () => {
+    if (wordCount < MIN_WORDS) { setShowLowWords(true); return; }
+    if (mode === "brainstorm") { finalSubmit(); return; }
+    setShowExit(true);
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-display">{t("workspace.loadingSession")}</div>;
 
@@ -163,7 +189,7 @@ const StudentWorkspace = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {!isSubmitted && (
+          {!isSubmitted && timed && (
             <div className={`flex items-center gap-1.5 text-xs font-display font-medium ${isTimeUp ? "text-destructive" : isLowTime ? "text-warning" : "text-muted-foreground"}`}>
               <Clock className="w-3.5 h-3.5" />
               {isTimeUp ? t("workspace.timeUp") : formatTime(remaining)}
@@ -174,8 +200,17 @@ const StudentWorkspace = () => {
             <Button variant="outline" size="sm" onClick={() => navigate("/student-dashboard")} className="font-display text-xs h-7">
               <LogOut className="w-3 h-3 mr-1" />{t("workspace.back")}
             </Button>
+          ) : mode === "brainstorm" ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={saving} onClick={() => saveDraft(true)} className="font-display text-xs h-7">
+                <Save className="w-3 h-3 mr-1" />{t("workspace.saveDraft", "Save Draft & Pause")}
+              </Button>
+              <Button size="sm" disabled={saving} onClick={requestSubmit} className="font-display text-xs h-7">
+                <CheckCircle2 className="w-3 h-3 mr-1" />{t("workspace.finalSubmit", "Final Submission")}
+              </Button>
+            </div>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setShowExit(true)} className="font-display text-xs h-7">
+            <Button variant="outline" size="sm" onClick={requestSubmit} className="font-display text-xs h-7">
               <LogOut className="w-3 h-3 mr-1" />{t("workspace.submitExit")}
             </Button>
           )}
@@ -213,6 +248,25 @@ const StudentWorkspace = () => {
       </div>
 
       <ExitModal open={showExit} onClose={() => setShowExit(false)} essayContent={essay} essayId={essayId} soloMode={soloMode} />
+
+      <Dialog open={showLowWords} onOpenChange={setShowLowWords}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">{t("workspace.emptyTitle", "Essay is nearly empty")}</DialogTitle>
+            <DialogDescription className="font-display">
+              {t("workspace.emptyBody", "Your essay is currently empty. Would you like to save this topic as a draft to write later?")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" disabled={saving} onClick={() => setShowLowWords(false)} className="font-display">
+              {t("workspace.keepWriting", "Keep writing")}
+            </Button>
+            <Button disabled={saving} onClick={() => saveDraft(true)} className="font-display">
+              <Save className="w-4 h-4 mr-1" />{t("workspace.saveDraft", "Save Draft & Pause")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
