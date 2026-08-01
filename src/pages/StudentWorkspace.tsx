@@ -104,7 +104,7 @@ const StudentWorkspace = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
-  const timed = mode === "classroom";
+  const timed = mode !== "brainstorm";
 
   useEffect(() => {
     if (loading || isSubmitted || !timed) return;
