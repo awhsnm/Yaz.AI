@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Shield, LogOut, Clock, BookOpen } from "lucide-react";
+import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
@@ -9,11 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
 const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } as const;
 
 const SESSION_DURATION = 45 * 60;
+const MIN_WORDS = 20;
 
 interface Msg { id: string; role: "user" | "assistant"; content: string; }
 
@@ -30,6 +32,9 @@ const StudentWorkspace = () => {
   const [subject, setSubject] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [soloMode, setSoloMode] = useState(false);
+  const [mode, setMode] = useState<"classroom" | "solo" | "brainstorm">("classroom");
+  const [showLowWords, setShowLowWords] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [chatHistory, setChatHistory] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [showExit, setShowExit] = useState(false);
@@ -59,6 +64,7 @@ const StudentWorkspace = () => {
       setSubject(e.subject);
       setIsSubmitted(!!e.is_submitted);
       setSoloMode(e.classroom_id == null);
+      setMode(((e as { mode?: string }).mode as "classroom" | "solo" | "brainstorm") ?? (e.classroom_id ? "classroom" : "solo"));
       lastSaved.current = e.content;
       const { data: m } = await supabase
         .from("messages")
