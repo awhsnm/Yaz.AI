@@ -115,12 +115,15 @@ export type Database = {
       essays: {
         Row: {
           ai_checked_at: string | null
+          ai_feedback: string | null
+          ai_feedback_at: string | null
           ai_probability: number | null
           classroom_id: string | null
           content: string
           created_at: string
           id: string
           is_submitted: boolean
+          mode: string
           student_id: string
           subject: string
           topic: string
@@ -128,12 +131,15 @@ export type Database = {
         }
         Insert: {
           ai_checked_at?: string | null
+          ai_feedback?: string | null
+          ai_feedback_at?: string | null
           ai_probability?: number | null
           classroom_id?: string | null
           content?: string
           created_at?: string
           id?: string
           is_submitted?: boolean
+          mode?: string
           student_id: string
           subject?: string
           topic?: string
@@ -141,12 +147,15 @@ export type Database = {
         }
         Update: {
           ai_checked_at?: string | null
+          ai_feedback?: string | null
+          ai_feedback_at?: string | null
           ai_probability?: number | null
           classroom_id?: string | null
           content?: string
           created_at?: string
           id?: string
           is_submitted?: boolean
+          mode?: string
           student_id?: string
           subject?: string
           topic?: string
