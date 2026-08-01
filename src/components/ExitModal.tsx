@@ -18,9 +18,10 @@ interface ExitModalProps {
   onClose: () => void;
   essayContent: string;
   essayId?: string;
+  soloMode?: boolean;
 }
 
-const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => {
+const ExitModal = ({ open, onClose, essayContent, essayId, soloMode = false }: ExitModalProps) => {
   const [exitPassword, setExitPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -34,6 +35,14 @@ const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => 
 
     // Save the latest content first (essay is locked but not yet finalized)
     await supabase.from("essays").update({ content: essayContent }).eq("id", essayId);
+
+    // Solo / brainstorm sessions have no teacher passkey — submit freely.
+    if (soloMode) {
+      await supabase.from("essays").update({ is_submitted: true }).eq("id", essayId);
+      setBusy(false);
+      navigate("/student-dashboard");
+      return;
+    }
 
     // Look up the classroom's exit password via the essay
     const { data: e } = await supabase
@@ -87,14 +96,16 @@ const ExitModal = ({ open, onClose, essayContent, essayId }: ExitModalProps) => 
             </p>
           </div>
 
-          <Input
-            type="password"
-            placeholder={t("exit.pw")}
-            value={exitPassword}
-            onChange={(e) => { setExitPassword(e.target.value); setError(""); }}
-            onKeyDown={(e) => e.key === "Enter" && handleExit()}
-            className="font-display"
-          />
+          {!soloMode && (
+            <Input
+              type="password"
+              placeholder={t("exit.pw")}
+              value={exitPassword}
+              onChange={(e) => { setExitPassword(e.target.value); setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && handleExit()}
+              className="font-display"
+            />
+          )}
 
           {error && <p className="text-destructive text-sm font-display">{error}</p>}
 
