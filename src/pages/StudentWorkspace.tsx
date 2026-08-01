@@ -7,7 +7,11 @@ import AITutorSidebar from "@/components/AITutorSidebar";
 import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSettings } from "@/contexts/SettingsContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
+
+const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } as const;
 
 const SESSION_DURATION = 45 * 60;
 
@@ -19,6 +23,7 @@ const StudentWorkspace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { textSize } = useSettings();
 
   const [essay, setEssay] = useState("");
   const [topic, setTopic] = useState("");
@@ -130,10 +135,20 @@ const StudentWorkspace = () => {
             <span className="text-xs font-display font-medium text-success">{t("workspace.focusMode")}</span>
           </div>
           <span className="text-xs text-muted-foreground font-display">|</span>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground font-display">
-            <BookOpen className="w-3 h-3" />
-            <span className="truncate max-w-[260px]">{topic}</span>
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-display transition-colors">
+                <BookOpen className="w-3 h-3 shrink-0" />
+                <span className="truncate max-w-[260px]">{topic}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-96">
+              <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-1">
+                {subject}
+              </p>
+              <p className="font-display text-sm text-foreground leading-relaxed">{topic}</p>
+            </PopoverContent>
+          </Popover>
           {isSubmitted && (
             <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 text-[10px] font-display font-semibold uppercase tracking-wide">
               {t("workspace.statusSubmitted")}
@@ -170,7 +185,7 @@ const StudentWorkspace = () => {
               onPaste={handlePaste}
               readOnly={isSubmitted}
               placeholder={t("workspace.begin", { topic })}
-              className={`w-full h-full min-h-[calc(100vh-8rem)] resize-none bg-transparent focus-editor outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
+              className={`w-full h-full min-h-[calc(100vh-8rem)] resize-none bg-transparent focus-editor ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
               autoFocus
             />
           </div>
@@ -191,7 +206,7 @@ const StudentWorkspace = () => {
         )}
       </div>
 
-      <ExitModal open={showExit} onClose={() => setShowExit(false)} essayContent={essay} essayId={essayId} />
+      <ExitModal open={showExit} onClose={() => setShowExit(false)} essayContent={essay} essayId={essayId} soloMode={soloMode} />
     </div>
   );
 };
