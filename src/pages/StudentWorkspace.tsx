@@ -104,21 +104,23 @@ const StudentWorkspace = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
+  const timed = mode === "classroom";
+
   useEffect(() => {
-    if (loading || isSubmitted || mode === "brainstorm") return;
+    if (loading || isSubmitted || !timed) return;
     const t = setInterval(() => setRemaining((r) => (r <= 1 ? 0 : r - 1)), 1000);
     return () => clearInterval(t);
-  }, [loading, isSubmitted, mode]);
+  }, [loading, isSubmitted, timed]);
 
   // Auto-submit when timer runs out
   useEffect(() => {
-    if (loading || isSubmitted || remaining > 0 || mode === "brainstorm") return;
+    if (loading || isSubmitted || remaining > 0 || !timed) return;
     (async () => {
       await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
       setIsSubmitted(true);
       toast({ title: t("workspace.timeUp"), description: t("workspace.autoSubmitted") });
     })();
-  }, [remaining, loading, isSubmitted, essay, essayId, toast, t, mode]);
+  }, [remaining, loading, isSubmitted, essay, essayId, toast, t, timed]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
@@ -129,7 +131,6 @@ const StudentWorkspace = () => {
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   const isTimeUp = remaining === 0;
   const isLowTime = remaining <= 300 && remaining > 0;
-  const timed = mode !== "brainstorm";
 
   const saveDraft = async (leave: boolean) => {
     if (!essayId) return;
