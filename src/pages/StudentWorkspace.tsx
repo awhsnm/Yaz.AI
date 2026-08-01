@@ -104,6 +104,8 @@ const StudentWorkspace = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
+  const timed = mode === "classroom";
+
   useEffect(() => {
     if (loading || isSubmitted || !timed) return;
     const t = setInterval(() => setRemaining((r) => (r <= 1 ? 0 : r - 1)), 1000);
@@ -129,7 +131,6 @@ const StudentWorkspace = () => {
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   const isTimeUp = remaining === 0;
   const isLowTime = remaining <= 300 && remaining > 0;
-  const timed = mode === "classroom";
 
   const saveDraft = async (leave: boolean) => {
     if (!essayId) return;
