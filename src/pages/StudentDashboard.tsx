@@ -15,6 +15,8 @@ interface Essay {
   content: string;
   is_submitted: boolean;
   updated_at: string;
+  mode: string;
+  classroom_id: string | null;
   evaluated?: boolean;
 }
 
@@ -39,7 +41,7 @@ const StudentDashboard = () => {
 
       const { data } = await supabase
         .from("essays")
-        .select("id, topic, subject, content, is_submitted, updated_at")
+        .select("id, topic, subject, content, is_submitted, updated_at, mode, classroom_id")
         .eq("student_id", user.id)
         .order("updated_at", { ascending: false });
       const list = data ?? [];
@@ -107,19 +109,25 @@ const StudentDashboard = () => {
           <div className="grid gap-3">
             {essays.map((e) => {
               const wc = e.content.trim().split(/\s+/).filter(Boolean).length;
+              const isClassroom = (e.mode ?? (e.classroom_id ? "classroom" : "solo")) === "classroom";
               return (
                 <button
                   key={e.id}
                   onClick={() => navigate(e.is_submitted || e.evaluated ? `/feedback/${e.id}` : `/essay/${e.id}`)}
-                  className="bg-card border border-border rounded-lg p-4 text-left hover:border-primary transition-colors"
+                  className={`rounded-lg p-4 text-left border transition-colors hover:border-primary ${
+                    isClassroom ? "bg-primary/5 border-primary/40" : "bg-card border-border"
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <h3 className="font-display font-semibold text-foreground truncate">{e.topic || "Untitled"}</h3>
-                      <p className="text-xs text-muted-foreground font-display mt-0.5">{e.subject} • {wc} {t("common.words")}</p>
+                      <p className="text-xs text-muted-foreground font-display mt-0.5">
+                        {isClassroom && <span className="text-primary font-semibold">{t("modes.classroomTitle")} • </span>}
+                        {e.subject} • {wc} {t("common.words")}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-display shrink-0">
-                      {e.evaluated ? (
+                      {isClassroom && e.evaluated ? (
                         <span className="flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 font-semibold"><Award className="w-3.5 h-3.5" />{t("dashboard.evaluated")}</span>
                       ) : e.is_submitted ? (
                         <span className="flex items-center gap-1 text-success"><CheckCircle2 className="w-3.5 h-3.5" />{t("dashboard.submitted")}</span>
