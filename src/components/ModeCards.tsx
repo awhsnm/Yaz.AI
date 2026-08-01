@@ -34,12 +34,12 @@ const ModeCards = () => {
   const [generating, setGenerating] = useState(false);
   const [topics, setTopics] = useState<GeneratedTopic[]>([]);
 
-  const startEssay = async (topic: string, subject: string) => {
+  const startEssay = async (topic: string, subject: string, mode: "solo" | "brainstorm") => {
     if (!user) return;
     setCreating(true);
     const { data, error } = await supabase
       .from("essays")
-      .insert({ student_id: user.id, topic: topic.trim(), subject, classroom_id: null })
+      .insert({ student_id: user.id, topic: topic.trim(), subject, classroom_id: null, mode })
       .select()
       .single();
     setCreating(false);
@@ -165,7 +165,7 @@ const ModeCards = () => {
               </Select>
             </div>
             <Button
-              onClick={() => startEssay(soloTopic, soloSubject)}
+              onClick={() => startEssay(soloTopic, soloSubject, "solo")}
               disabled={creating || !soloTopic.trim() || !soloSubject}
               className="w-full font-display"
             >
@@ -226,7 +226,7 @@ const ModeCards = () => {
                 {topics.map((topic, i) => (
                   <button
                     key={i}
-                    onClick={() => startEssay(topic.title, brainSubject)}
+                    onClick={() => startEssay(topic.title, brainSubject, "brainstorm")}
                     disabled={creating}
                     className="w-full text-left bg-muted/50 hover:bg-muted border border-border hover:border-primary rounded-lg p-3 transition-all group disabled:opacity-50"
                   >

@@ -53,7 +53,7 @@ const JoinLesson = () => {
     setBusy(true);
     const { data, error: err } = await supabase
       .from("essays")
-      .insert({ student_id: user.id, topic: topic.trim(), subject, classroom_id: classroomId })
+      .insert({ student_id: user.id, topic: topic.trim(), subject, classroom_id: classroomId, mode: "classroom" })
       .select()
       .single();
     setBusy(false);
