@@ -95,6 +95,12 @@ const Auth = () => {
                   <Lock className="w-4 h-4 mr-2" />
                   {busy ? t("auth.signingIn") : t("auth.signIn")}
                 </Button>
+                <div className="rounded-md border border-border bg-muted/50 px-3 py-2">
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-primary" />{t("auth.teacherPortal")}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{t("auth.teacherNote")}</p>
+                </div>
               </form>
             </TabsContent>
 
