@@ -18,8 +18,10 @@ Rules:
 - Topics must still be deep and thought-provoking, but instantly understandable at first read.
 - Each option must have a specific, arguable title (not vague).
 - Each option must include a one-sentence focus summary written in the same simple, friendly style.
+- Each option must include a "background": 2-3 sentences of real, factual context about the topic (names, dates, numbers, real events) that give the student solid material to argue with.
+- Each option must include "facts": 3-4 short, concrete, verifiable bullet facts (max 20 words each) about the topic.
 - Keep titles under 12 words and summaries under 25 words.
-- Return ONLY valid JSON matching this exact shape: {"topics":[{"title":"...","focus":"..."},{"title":"...","focus":"..."},{"title":"...","focus":"..."}]}
+- Return ONLY valid JSON matching this exact shape: {"topics":[{"title":"...","focus":"...","background":"...","facts":["...","...","..."]}]} with exactly 3 topics.
 - No prose, no markdown, no code fences.`;
 
 serve(async (req) => {
@@ -76,7 +78,7 @@ serve(async (req) => {
 
     const data = await resp.json();
     const raw = data.choices?.[0]?.message?.content ?? "{}";
-    let parsed: { topics?: Array<{ title: string; focus: string }> } = {};
+    let parsed: { topics?: Array<{ title: string; focus: string; background?: string; facts?: string[] }> } = {};
     try {
       parsed = JSON.parse(raw);
     } catch {
