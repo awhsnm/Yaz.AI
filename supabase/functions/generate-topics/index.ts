@@ -17,11 +17,13 @@ Rules:
 - NO academic jargon, no "discourse", "paradigm", "socio-cultural", no research-paper phrasing.
 - Topics must still be deep and thought-provoking, but instantly understandable at first read.
 - Each option must have a specific, arguable title (not vague).
-- Each option must include a one-sentence focus summary written in the same simple, friendly style.
-- Each option must include a "background": 2-3 sentences of real, factual context about the topic (names, dates, numbers, real events) that give the student solid material to argue with.
+- Each option must include "focus": a one-sentence core thesis statement in the same simple, friendly style.
+- Each option must include "background": ONE rich research paragraph of 150-200 words with historical, cultural or technical context, real names, dates, numbers and events, still in plain B1-B2 English.
+- Each option must include "angles": 2-3 key arguments/perspectives, each {"label":"short angle name like Economic impact","detail":"one sentence explaining it"}.
+- Each option must include "vocabulary": 3-4 useful terms, each {"term":"...","definition":"plain-English definition, max 20 words"}.
 - Each option must include "facts": 3-4 short, concrete, verifiable bullet facts (max 20 words each) about the topic.
-- Keep titles under 12 words and summaries under 25 words.
-- Return ONLY valid JSON matching this exact shape: {"topics":[{"title":"...","focus":"...","background":"...","facts":["...","...","..."]}]} with exactly 3 topics.
+- Keep titles under 12 words and the focus thesis under 30 words.
+- Return ONLY valid JSON matching this exact shape: {"topics":[{"title":"...","focus":"...","background":"...","angles":[{"label":"...","detail":"..."}],"vocabulary":[{"term":"...","definition":"..."}],"facts":["...","...","..."]}]} with exactly 3 topics.
 - No prose, no markdown, no code fences.`;
 
 serve(async (req) => {
