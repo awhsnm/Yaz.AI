@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, FileText, CheckCircle2, Clock, Award } from "lucide-react";
+import { BookOpen, FileText, CheckCircle2, Clock, Award, MoreHorizontal, Pin, PinOff, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import UserMenu from "@/components/UserMenu";
 import BirthdayOverlay from "@/components/BirthdayOverlay";
 import ModeCards from "@/components/ModeCards";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Essay {
   id: string;
@@ -17,17 +25,20 @@ interface Essay {
   updated_at: string;
   mode: string;
   classroom_id: string | null;
+  pinned: boolean;
   evaluated?: boolean;
 }
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [essays, setEssays] = useState<Essay[]>([]);
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState<string>("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -41,10 +52,11 @@ const StudentDashboard = () => {
 
       const { data } = await supabase
         .from("essays")
-        .select("id, topic, subject, content, is_submitted, updated_at, mode, classroom_id")
+        .select("id, topic, subject, content, is_submitted, updated_at, mode, classroom_id, pinned")
         .eq("student_id", user.id)
+        .order("pinned", { ascending: false })
         .order("updated_at", { ascending: false });
-      const list = data ?? [];
+      const list = (data ?? []) as Essay[];
       if (list.length) {
         const { data: evals } = await supabase
           .from("evaluations")
@@ -58,6 +70,31 @@ const StudentDashboard = () => {
       setLoading(false);
     })();
   }, [user]);
+
+  const togglePin = async (essay: Essay) => {
+    const next = !essay.pinned;
+    setEssays((prev) => {
+      const updated = prev.map((e) => (e.id === essay.id ? { ...e, pinned: next } : e));
+      return [...updated].sort((a, b) =>
+        a.pinned === b.pinned ? +new Date(b.updated_at) - +new Date(a.updated_at) : a.pinned ? -1 : 1
+      );
+    });
+    const { error } = await supabase.from("essays").update({ pinned: next }).eq("id", essay.id);
+    if (error) toast({ title: t("common.error", "Something went wrong"), description: error.message, variant: "destructive" });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const id = deleteId;
+    setDeleteId(null);
+    const { error } = await supabase.from("essays").delete().eq("id", id);
+    if (error) {
+      toast({ title: t("common.error", "Something went wrong"), description: error.message, variant: "destructive" });
+      return;
+    }
+    setEssays((prev) => prev.filter((e) => e.id !== id));
+    toast({ title: t("dashboard.deleted", "Draft deleted") });
+  };
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -109,39 +146,89 @@ const StudentDashboard = () => {
           <div className="grid gap-3">
             {essays.map((e) => {
               const wc = e.content.trim().split(/\s+/).filter(Boolean).length;
-              const isClassroom = (e.mode ?? (e.classroom_id ? "classroom" : "solo")) === "classroom";
+              const mode = e.mode ?? (e.classroom_id ? "classroom" : "solo");
+              const isClassroom = mode === "classroom";
+              const isBrainstorm = mode === "brainstorm";
+              const cardStyle = isClassroom
+                ? "bg-primary/5 border-primary/40"
+                : isBrainstorm
+                ? "bg-success/5 border-success/40"
+                : "bg-card border-border";
               return (
-                <button
+                <div
                   key={e.id}
-                  onClick={() => navigate(e.is_submitted || e.evaluated ? `/feedback/${e.id}` : `/essay/${e.id}`)}
-                  className={`rounded-lg p-4 text-left border transition-colors hover:border-primary ${
-                    isClassroom ? "bg-primary/5 border-primary/40" : "bg-card border-border"
-                  }`}
+                  className={`rounded-lg border transition-colors hover:border-primary ${cardStyle}`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
+                  <div className="flex items-start gap-2 p-4">
+                    <button
+                      onClick={() => navigate(e.is_submitted || e.evaluated ? `/feedback/${e.id}` : `/essay/${e.id}`)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-1 text-xs font-display">
+                        {isClassroom && e.evaluated ? (
+                          <span className="flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 font-semibold"><Award className="w-3.5 h-3.5" />{t("dashboard.evaluated")}</span>
+                        ) : e.is_submitted ? (
+                          <span className="flex items-center gap-1 text-success"><CheckCircle2 className="w-3.5 h-3.5" />{t("dashboard.submitted")}</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-muted-foreground"><Clock className="w-3.5 h-3.5" />{t("dashboard.draft")}</span>
+                        )}
+                        {e.pinned && <Pin className="w-3 h-3 text-primary fill-primary" />}
+                      </div>
                       <h3 className="font-display font-semibold text-foreground truncate">{e.topic || "Untitled"}</h3>
                       <p className="text-xs text-muted-foreground font-display mt-0.5">
                         {isClassroom && <span className="text-primary font-semibold">{t("modes.classroomTitle")} • </span>}
+                        {isBrainstorm && <span className="text-success font-semibold">{t("modes.brainTitle")} • </span>}
                         {e.subject} • {wc} {t("common.words")}
                       </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs font-display shrink-0">
-                      {isClassroom && e.evaluated ? (
-                        <span className="flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 font-semibold"><Award className="w-3.5 h-3.5" />{t("dashboard.evaluated")}</span>
-                      ) : e.is_submitted ? (
-                        <span className="flex items-center gap-1 text-success"><CheckCircle2 className="w-3.5 h-3.5" />{t("dashboard.submitted")}</span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-muted-foreground"><Clock className="w-3.5 h-3.5" />{t("dashboard.draft")}</span>
-                      )}
-                    </div>
+                    </button>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          aria-label={t("dashboard.actions", "Essay actions")}
+                          className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem className="font-display" onClick={() => togglePin(e)}>
+                          {e.pinned ? <PinOff className="w-4 h-4 mr-2" /> : <Pin className="w-4 h-4 mr-2" />}
+                          {e.pinned ? t("dashboard.unpin", "Unpin") : t("dashboard.pin", "Pin to top")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="font-display text-destructive focus:text-destructive"
+                          onClick={() => setDeleteId(e.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />{t("dashboard.delete", "Delete draft")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">{t("dashboard.deleteTitle", "Delete this draft?")}</AlertDialogTitle>
+            <AlertDialogDescription className="font-display">
+              {t("dashboard.deleteBody", "This permanently removes the essay and its chat history. This cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-display">{t("common.cancel", "Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="font-display bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t("dashboard.delete", "Delete draft")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
