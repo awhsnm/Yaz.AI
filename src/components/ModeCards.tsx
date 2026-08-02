@@ -37,6 +37,7 @@ type GeneratedTopic = {
   facts?: string[];
   angles?: Angle[];
   vocabulary?: Vocab[];
+  guiding_question?: string;
 };
 
 const ModeCards = () => {
