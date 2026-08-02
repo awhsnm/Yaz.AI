@@ -95,6 +95,48 @@ serve(async (req) => {
     }
     const topics = Array.isArray(parsed.topics) ? parsed.topics.slice(0, 3) : [];
 
+    // Guarantee 2-3 sentence, substantive theses — repair any that came back too short.
+    const isThin = (f?: string) => {
+      const s = (f ?? "").trim();
+      const sentences = s.split(/[.!?]+\s/).filter(Boolean).length;
+      return s.split(/\s+/).filter(Boolean).length < 45 || sentences < 2;
+    };
+    const thin = topics.filter((tp) => isThin(tp.focus));
+    if (thin.length) {
+      try {
+        const fixResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3.6-flash",
+            messages: [
+              {
+                role: "system",
+                content:
+                  `Rewrite each core thesis so it is EXACTLY 2-3 sentences, 60-100 words, plain B1-B2 English: (1) a definite arguable stance, (2) the nuance or counter-argument that makes it non-obvious, (3) the analytical direction/evidence that would prove it. Return ONLY {"theses":["...","..."]} in the same order.`,
+              },
+              {
+                role: "user",
+                content: JSON.stringify(thin.map((tp) => ({ title: tp.title, thesis: tp.focus }))),
+              },
+            ],
+            response_format: { type: "json_object" },
+          }),
+        });
+        if (fixResp.ok) {
+          const fixData = await fixResp.json();
+          const fixed = JSON.parse(fixData.choices?.[0]?.message?.content ?? "{}")?.theses;
+          if (Array.isArray(fixed)) {
+            thin.forEach((tp, i) => {
+              if (typeof fixed[i] === "string" && fixed[i].trim()) tp.focus = fixed[i].trim();
+            });
+          }
+        }
+      } catch (err) {
+        console.error("thesis repair failed:", err);
+      }
+    }
+
     return new Response(JSON.stringify({ topics }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
