@@ -17,12 +17,15 @@ Rules:
 - NO academic jargon, no "discourse", "paradigm", "socio-cultural", no research-paper phrasing.
 - Topics must still be deep and thought-provoking, but instantly understandable at first read.
 - Each option must have a specific, arguable title (not vague).
-- Each option must include "focus": a DEEP core thesis of EXACTLY 2 or 3 full sentences (minimum 45 words, ideally 60-100), still in plain B1-B2 English. NEVER one sentence. It must do all three of these, in order:
+- Each option must include "focus": a DEEP core thesis argument of AT LEAST 8 full sentences (minimum 160 words, ideally 200-280), still in plain B1-B2 English. Never fewer than 8 sentences. It must do all of these, in order:
   (1) state the main arguable claim clearly and take a definite stance (not "both sides have points");
   (2) name the key nuance, condition or tension that makes the claim non-obvious (e.g. "this is true mainly when...", "the real problem is not X but Y");
-  (3) point to the analytical direction the essay should take — what kind of evidence or comparison would prove it.
+  (3) develop 2-3 supporting lines of reasoning the student can turn into body paragraphs;
+  (4) raise and answer the strongest counter-argument;
+  (5) point to the analytical direction the essay should take — what kind of evidence or comparison would prove it;
+  (6) close with the wider implication or "so what".
   Never write a vague, generic or descriptive thesis like "AI has both good and bad effects". It must be specific enough that a student can build 3 body paragraphs directly from it.
-  Required depth, match this style and length exactly:
+  Required style (but write at least 8 sentences, longer than this sample):
   "While automated AI systems increase speed in collaborative environments, offloading core decision-making risks cognitive passivity and diminishes critical evaluation among team members. To preserve human creativity, teams must position AI strictly as an analytical advisor rather than a primary decision-maker. Comparing teams that review AI output line by line with teams that accept it as final would show how much independent judgement is actually lost."
 - Each option must include "background": ONE rich research paragraph of 150-200 words with historical, cultural or technical context, real names, dates, numbers and events, still in plain B1-B2 English.
 - Each option must include "angles": 3-4 key arguments/perspectives. At least one MUST be a counterargument or nuance. Each is {"label":"short angle name like Over-reliance or Counterargument: algorithmic echo chambers","detail":"one sentence explaining it"}.
@@ -95,11 +98,11 @@ serve(async (req) => {
     }
     const topics = Array.isArray(parsed.topics) ? parsed.topics.slice(0, 3) : [];
 
-    // Guarantee 2-3 sentence, substantive theses — repair any that came back too short.
+    // Guarantee long (8+ sentence) substantive theses — repair any that came back too short.
     const isThin = (f?: string) => {
       const s = (f ?? "").trim();
       const sentences = s.split(/[.!?]+\s/).filter(Boolean).length;
-      return s.split(/\s+/).filter(Boolean).length < 45 || sentences < 2;
+      return s.split(/\s+/).filter(Boolean).length < 160 || sentences < 8;
     };
     const thin = topics.filter((tp) => isThin(tp.focus));
     if (thin.length) {
@@ -113,7 +116,7 @@ serve(async (req) => {
               {
                 role: "system",
                 content:
-                  `Rewrite each core thesis so it is EXACTLY 2-3 sentences, 60-100 words, plain B1-B2 English: (1) a definite arguable stance, (2) the nuance or counter-argument that makes it non-obvious, (3) the analytical direction/evidence that would prove it. Return ONLY {"theses":["...","..."]} in the same order.`,
+                  `Expand each core thesis into AT LEAST 8 full sentences (200-280 words), plain B1-B2 English: (1) a definite arguable stance, (2) the nuance that makes it non-obvious, (3) two or three supporting lines of reasoning, (4) the strongest counter-argument and your answer to it, (5) the analytical direction/evidence that would prove it, (6) the wider implication. Return ONLY {"theses":["...","..."]} in the same order.`,
               },
               {
                 role: "user",
