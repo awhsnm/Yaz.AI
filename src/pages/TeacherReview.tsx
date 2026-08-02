@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback, useLayoutEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, BookOpen, MessageSquare, Sparkles, Save, Trash2, MessageSquarePlus, X } from "lucide-react";
+import { ArrowLeft, BookOpen, MessageSquare, Sparkles, Save, Trash2, MessageSquarePlus, X, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import AnnotatedText, { type Annotation } from "@/components/AnnotatedText";
+import WritingPlayback from "@/components/WritingPlayback";
 
 interface Essay {
   id: string;
@@ -48,6 +49,7 @@ const TeacherReview = () => {
   const [evalSaving, setEvalSaving] = useState(false);
 
   const [aiBusy, setAiBusy] = useState(false);
+  const [playbackOpen, setPlaybackOpen] = useState(false);
 
   const [selection, setSelection] = useState<{
     start: number;
@@ -270,6 +272,9 @@ const TeacherReview = () => {
           </div>
           <Badge variant="outline" className="font-display">{essay.subject}</Badge>
           {essay.is_submitted && <Badge className="font-display">Submitted</Badge>}
+          <Button size="sm" variant="outline" onClick={() => setPlaybackOpen(true)} className="font-display">
+            <Play className="w-3.5 h-3.5 mr-1" />Playback Writing Process
+          </Button>
           <Button size="sm" onClick={runAiCheck} disabled={aiBusy} className="font-display">
             <Sparkles className="w-3.5 h-3.5 mr-1" />{aiBusy ? "Analyzing..." : "Check for AI"}
           </Button>
