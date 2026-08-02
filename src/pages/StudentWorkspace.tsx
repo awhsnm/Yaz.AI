@@ -42,6 +42,8 @@ const StudentWorkspace = () => {
   const [remaining, setRemaining] = useState(SESSION_DURATION);
   const [showDiscard, setShowDiscard] = useState(false);
   const lastSaved = useRef("");
+  const lastLogged = useRef("");
+  const pendingPaste = useRef(0);
 
   // Load essay + messages
   useEffect(() => {
@@ -98,6 +100,28 @@ const StudentWorkspace = () => {
     return () => clearInterval(i);
   }, [essay, essayId, loading, isSubmitted]);
 
+  // Writing playback: log a snapshot every 3s while the text changes
+  useEffect(() => {
+    if (!essayId || !user || loading || isSubmitted) return;
+    const i = setInterval(() => {
+      if (essay === lastLogged.current) return;
+      const snapshot = essay;
+      const added = snapshot.length - lastLogged.current.length;
+      const paste = pendingPaste.current > 0 || added >= 50;
+      pendingPaste.current = 0;
+      lastLogged.current = snapshot;
+      supabase.from("writing_events").insert({
+        essay_id: essayId,
+        student_id: user.id,
+        snapshot,
+        word_count: snapshot.trim().split(/\s+/).filter(Boolean).length,
+        chars_added: added,
+        is_paste: paste,
+      }).then(() => {});
+    }, 3000);
+    return () => clearInterval(i);
+  }, [essay, essayId, user, loading, isSubmitted]);
+
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -128,8 +152,19 @@ const StudentWorkspace = () => {
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
+    pendingPaste.current += e.clipboardData?.getData("text")?.length ?? 1;
+    if (essayId && user) {
+      supabase.from("writing_events").insert({
+        essay_id: essayId,
+        student_id: user.id,
+        snapshot: essay,
+        word_count: essay.trim().split(/\s+/).filter(Boolean).length,
+        chars_added: e.clipboardData?.getData("text")?.length ?? 0,
+        is_paste: true,
+      }).then(() => {});
+    }
     toast({ title: t("workspace.pasteOff"), description: t("workspace.pasteHint"), variant: "destructive" });
-  }, [toast, t]);
+  }, [toast, t, essay, essayId, user]);
 
   const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
