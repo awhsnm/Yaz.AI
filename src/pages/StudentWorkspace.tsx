@@ -278,19 +278,44 @@ const StudentWorkspace = () => {
           <DialogHeader>
             <DialogTitle className="font-display">{t("workspace.emptyTitle", "Essay is nearly empty")}</DialogTitle>
             <DialogDescription className="font-display">
-              {t("workspace.emptyBody", "Your essay is currently empty. Would you like to save this topic as a draft to write later?")}
+              {mode === "solo"
+                ? t("workspace.emptySolo", "Solo Practice can't be saved as a draft. Write at least 20 words before submitting, or discard the session.")
+                : t("workspace.emptyBody", "Your essay is currently empty. Would you like to save this topic as a draft to write later?")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" disabled={saving} onClick={() => setShowLowWords(false)} className="font-display">
               {t("workspace.keepWriting", "Keep writing")}
             </Button>
-            <Button disabled={saving} onClick={() => saveDraft(true)} className="font-display">
-              <Save className="w-4 h-4 mr-1" />{t("workspace.saveDraft", "Save Draft & Pause")}
-            </Button>
+            {mode === "solo" ? (
+              <Button variant="destructive" disabled={saving} onClick={() => { setShowLowWords(false); setShowDiscard(true); }} className="font-display">
+                <Trash2 className="w-4 h-4 mr-1" />{t("workspace.discard", "Discard Session")}
+              </Button>
+            ) : (
+              <Button disabled={saving} onClick={() => saveDraft(true)} className="font-display">
+                <Save className="w-4 h-4 mr-1" />{t("workspace.saveDraft", "Save Draft & Pause")}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDiscard} onOpenChange={setShowDiscard}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">{t("workspace.discardTitle", "Discard this session?")}</AlertDialogTitle>
+            <AlertDialogDescription className="font-display">
+              {t("workspace.discardBody", "Your writing will be permanently deleted. This cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-display">{t("common.cancel", "Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={discardSession} className="font-display bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t("workspace.discard", "Discard Session")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
