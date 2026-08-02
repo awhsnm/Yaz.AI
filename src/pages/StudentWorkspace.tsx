@@ -158,7 +158,17 @@ const StudentWorkspace = () => {
   const requestSubmit = () => {
     if (wordCount < MIN_WORDS) { setShowLowWords(true); return; }
     if (mode === "brainstorm") { finalSubmit(); return; }
+    if (mode === "solo") { finalSubmit(); return; }
     setShowExit(true);
+  };
+
+  const discardSession = async () => {
+    if (!essayId) return;
+    setSaving(true);
+    await supabase.from("essays").delete().eq("id", essayId);
+    setSaving(false);
+    setShowDiscard(false);
+    navigate("/student-dashboard");
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-display">{t("workspace.loadingSession")}</div>;
@@ -212,6 +222,15 @@ const StudentWorkspace = () => {
               </Button>
               <Button size="sm" disabled={saving} onClick={requestSubmit} className="font-display text-xs h-7">
                 <CheckCircle2 className="w-3 h-3 mr-1" />{t("workspace.finalSubmit", "Final Submission")}
+              </Button>
+            </div>
+          ) : mode === "solo" ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={saving} onClick={() => setShowDiscard(true)} className="font-display text-xs h-7 text-destructive hover:text-destructive">
+                <Trash2 className="w-3 h-3 mr-1" />{t("workspace.discard", "Discard Session")}
+              </Button>
+              <Button size="sm" disabled={saving} onClick={requestSubmit} className="font-display text-xs h-7">
+                <CheckCircle2 className="w-3 h-3 mr-1" />{t("workspace.submitEssay", "Submit Essay")}
               </Button>
             </div>
           ) : (
