@@ -39,11 +39,6 @@ const en = {
     sentDesc: "Thank you — our team will contact you shortly.",
     required: "Please add your school name and contact email.",
   },
-  bdayLegacy: {
-    title: "Happy Birthday!",
-    msg: "Wishing you a wonderful year ahead.",
-    dismiss: "Thank you!",
-  },
   dashboard: {
     title: "My Essays",
     drafts: "Drafts & Submissions",
