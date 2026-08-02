@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2 } from "lucide-react";
+import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 
 const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } as const;
@@ -39,6 +40,7 @@ const StudentWorkspace = () => {
   const [loading, setLoading] = useState(true);
   const [showExit, setShowExit] = useState(false);
   const [remaining, setRemaining] = useState(SESSION_DURATION);
+  const [showDiscard, setShowDiscard] = useState(false);
   const lastSaved = useRef("");
 
   // Load essay + messages
@@ -65,6 +67,8 @@ const StudentWorkspace = () => {
       setIsSubmitted(!!e.is_submitted);
       setSoloMode(e.classroom_id == null);
       setMode(((e as { mode?: string }).mode as "classroom" | "solo" | "brainstorm") ?? (e.classroom_id ? "classroom" : "solo"));
+      const mins = (e as { duration_minutes?: number | null }).duration_minutes;
+      if (mins && mins > 0) setRemaining(mins * 60);
       lastSaved.current = e.content;
       const { data: m } = await supabase
         .from("messages")
@@ -154,7 +158,17 @@ const StudentWorkspace = () => {
   const requestSubmit = () => {
     if (wordCount < MIN_WORDS) { setShowLowWords(true); return; }
     if (mode === "brainstorm") { finalSubmit(); return; }
+    if (mode === "solo") { finalSubmit(); return; }
     setShowExit(true);
+  };
+
+  const discardSession = async () => {
+    if (!essayId) return;
+    setSaving(true);
+    await supabase.from("essays").delete().eq("id", essayId);
+    setSaving(false);
+    setShowDiscard(false);
+    navigate("/student-dashboard");
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-display">{t("workspace.loadingSession")}</div>;
@@ -210,6 +224,15 @@ const StudentWorkspace = () => {
                 <CheckCircle2 className="w-3 h-3 mr-1" />{t("workspace.finalSubmit", "Final Submission")}
               </Button>
             </div>
+          ) : mode === "solo" ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={saving} onClick={() => setShowDiscard(true)} className="font-display text-xs h-7 text-destructive hover:text-destructive">
+                <Trash2 className="w-3 h-3 mr-1" />{t("workspace.discard", "Discard Session")}
+              </Button>
+              <Button size="sm" disabled={saving} onClick={requestSubmit} className="font-display text-xs h-7">
+                <CheckCircle2 className="w-3 h-3 mr-1" />{t("workspace.submitEssay", "Submit Essay")}
+              </Button>
+            </div>
           ) : (
             <Button variant="outline" size="sm" onClick={requestSubmit} className="font-display text-xs h-7">
               <LogOut className="w-3 h-3 mr-1" />{t("workspace.submitExit")}
@@ -255,19 +278,44 @@ const StudentWorkspace = () => {
           <DialogHeader>
             <DialogTitle className="font-display">{t("workspace.emptyTitle", "Essay is nearly empty")}</DialogTitle>
             <DialogDescription className="font-display">
-              {t("workspace.emptyBody", "Your essay is currently empty. Would you like to save this topic as a draft to write later?")}
+              {mode === "solo"
+                ? t("workspace.emptySolo", "Solo Practice can't be saved as a draft. Write at least 20 words before submitting, or discard the session.")
+                : t("workspace.emptyBody", "Your essay is currently empty. Would you like to save this topic as a draft to write later?")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" disabled={saving} onClick={() => setShowLowWords(false)} className="font-display">
               {t("workspace.keepWriting", "Keep writing")}
             </Button>
-            <Button disabled={saving} onClick={() => saveDraft(true)} className="font-display">
-              <Save className="w-4 h-4 mr-1" />{t("workspace.saveDraft", "Save Draft & Pause")}
-            </Button>
+            {mode === "solo" ? (
+              <Button variant="destructive" disabled={saving} onClick={() => { setShowLowWords(false); setShowDiscard(true); }} className="font-display">
+                <Trash2 className="w-4 h-4 mr-1" />{t("workspace.discard", "Discard Session")}
+              </Button>
+            ) : (
+              <Button disabled={saving} onClick={() => saveDraft(true)} className="font-display">
+                <Save className="w-4 h-4 mr-1" />{t("workspace.saveDraft", "Save Draft & Pause")}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDiscard} onOpenChange={setShowDiscard}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">{t("workspace.discardTitle", "Discard this session?")}</AlertDialogTitle>
+            <AlertDialogDescription className="font-display">
+              {t("workspace.discardBody", "Your writing will be permanently deleted. This cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-display">{t("common.cancel", "Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={discardSession} className="font-display bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t("workspace.discard", "Discard Session")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
