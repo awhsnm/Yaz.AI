@@ -226,7 +226,6 @@ const StudentDashboard = () => {
               {t("dashboard.delete", "Delete draft")}
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
