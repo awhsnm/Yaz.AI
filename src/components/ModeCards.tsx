@@ -37,6 +37,7 @@ type GeneratedTopic = {
   facts?: string[];
   angles?: Angle[];
   vocabulary?: Vocab[];
+  guiding_question?: string;
 };
 
 const ModeCards = () => {
@@ -250,7 +251,8 @@ const ModeCards = () => {
 
       {/* Brainstorm modal */}
       <Dialog open={brainOpen} onOpenChange={(o) => { setBrainOpen(o); if (!o) { setTopics([]); setBrainInput(""); setPreview(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0">
+          <div className="px-6 pt-6">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-success" />
@@ -258,9 +260,11 @@ const ModeCards = () => {
             </DialogTitle>
             <DialogDescription className="font-display">{t("modes.brainModalDesc")}</DialogDescription>
           </DialogHeader>
+          </div>
 
           {preview ? (
-            <div className="space-y-4">
+            <>
+            <div className="space-y-4 overflow-y-auto px-6 py-5 flex-1">
               <button
                 onClick={() => setPreview(null)}
                 className="flex items-center gap-1 text-xs font-display text-muted-foreground hover:text-foreground"
@@ -268,19 +272,19 @@ const ModeCards = () => {
                 <ChevronLeft className="w-3.5 h-3.5" />{t("modes.backToTopics", "Back to topics")}
               </button>
               <div>
-                <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-success mb-1">
+                <span className="inline-block rounded-full bg-success/15 text-success px-2.5 py-1 text-[10px] uppercase tracking-wider font-display font-bold mb-2">
                   {t("modes.researchBrief", "Topic research brief")}
-                </p>
+                </span>
                 <h3 className="font-display font-bold text-lg text-foreground">{preview.title}</h3>
-                <div className="mt-2 rounded-lg border-l-2 border-success bg-success/5 pl-3 py-2">
+                <div className="mt-3 rounded-xl border-l-4 border-success bg-success/10 px-4 py-3">
                   <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-0.5">
                     {t("modes.coreThesis", "Core thesis")}
                   </p>
-                  <p className="text-sm font-display text-foreground">{preview.focus}</p>
+                  <p className="text-sm font-display text-foreground leading-relaxed">{preview.focus}</p>
                 </div>
               </div>
               {preview.background && (
-                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="rounded-xl border border-border bg-muted/40 p-4">
                   <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-1">
                     {t("modes.background", "Background & context")}
                   </p>
@@ -288,14 +292,14 @@ const ModeCards = () => {
                 </div>
               )}
               {preview.angles && preview.angles.length > 0 && (
-                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-2">
                     {t("modes.angles", "Key arguments & perspectives to explore")}
                   </p>
                   <ul className="space-y-2">
                     {preview.angles.map((a, i) => (
                       <li key={i} className="text-sm font-display text-foreground flex gap-2">
-                        <span className="text-success">•</span>
+                        <span className="text-primary">🔹</span>
                         <span>
                           <span className="font-semibold">{a.label}</span>
                           {a.detail ? <span className="text-muted-foreground"> — {a.detail}</span> : null}
@@ -306,22 +310,35 @@ const ModeCards = () => {
                 </div>
               )}
               {preview.vocabulary && preview.vocabulary.length > 0 && (
-                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
                   <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-2">
                     {t("modes.vocabulary", "Key vocabulary & terms")}
                   </p>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {preview.vocabulary.map((v, i) => (
-                      <p key={i} className="text-sm font-display text-foreground">
+                      <div
+                        key={i}
+                        className="rounded-full bg-card border border-warning/40 px-3 py-1.5 text-xs font-display text-foreground"
+                      >
                         <span className="font-semibold">{v.term}</span>
                         {v.definition ? <span className="text-muted-foreground"> — {v.definition}</span> : null}
-                      </p>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
+              {preview.guiding_question && (
+                <div className="rounded-xl border border-success/30 bg-success/5 p-4">
+                  <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-1">
+                    {t("modes.guidingQuestion", "Suggested guiding question")}
+                  </p>
+                  <p className="text-sm font-display italic text-foreground leading-relaxed">
+                    {preview.guiding_question}
+                  </p>
+                </div>
+              )}
               {preview.facts && preview.facts.length > 0 && (
-                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="rounded-xl border border-border bg-muted/40 p-4">
                   <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-2">
                     {t("modes.keyFacts", "Key facts")}
                   </p>
@@ -334,17 +351,20 @@ const ModeCards = () => {
                   </ul>
                 </div>
               )}
+            </div>
+            <div className="border-t border-border bg-card px-6 py-4">
               <Button
                 size="lg"
-                className="w-full font-display sticky bottom-0"
+                className="w-full font-display"
                 disabled={creating}
                 onClick={() => startEssay(preview.title, brainSubject, "brainstorm")}
               >
                 {creating ? t("common.loading") : t("modes.startWriting", "Start Writing Essay")}
               </Button>
             </div>
+            </>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto px-6 py-5">
               <div>
                 <Label className="font-display">{t("modes.brainInputLabel")}</Label>
                 <div className="flex flex-wrap gap-2 my-2">
