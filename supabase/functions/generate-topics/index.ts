@@ -98,11 +98,11 @@ serve(async (req) => {
     }
     const topics = Array.isArray(parsed.topics) ? parsed.topics.slice(0, 3) : [];
 
-    // Guarantee 2-3 sentence, substantive theses — repair any that came back too short.
+    // Guarantee long (8+ sentence) substantive theses — repair any that came back too short.
     const isThin = (f?: string) => {
       const s = (f ?? "").trim();
       const sentences = s.split(/[.!?]+\s/).filter(Boolean).length;
-      return s.split(/\s+/).filter(Boolean).length < 45 || sentences < 2;
+      return s.split(/\s+/).filter(Boolean).length < 160 || sentences < 8;
     };
     const thin = topics.filter((tp) => isThin(tp.focus));
     if (thin.length) {
@@ -116,7 +116,7 @@ serve(async (req) => {
               {
                 role: "system",
                 content:
-                  `Rewrite each core thesis so it is EXACTLY 2-3 sentences, 60-100 words, plain B1-B2 English: (1) a definite arguable stance, (2) the nuance or counter-argument that makes it non-obvious, (3) the analytical direction/evidence that would prove it. Return ONLY {"theses":["...","..."]} in the same order.`,
+                  `Expand each core thesis into AT LEAST 8 full sentences (200-280 words), plain B1-B2 English: (1) a definite arguable stance, (2) the nuance that makes it non-obvious, (3) two or three supporting lines of reasoning, (4) the strongest counter-argument and your answer to it, (5) the analytical direction/evidence that would prove it, (6) the wider implication. Return ONLY {"theses":["...","..."]} in the same order.`,
               },
               {
                 role: "user",
