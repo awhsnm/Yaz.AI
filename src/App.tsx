@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Auth from "./pages/Auth.tsx";
+import Landing from "./pages/Landing.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
 import StudentWorkspace from "./pages/StudentWorkspace.tsx";
 import JoinLesson from "./pages/JoinLesson.tsx";
@@ -26,7 +27,8 @@ const App = () => (
         <AuthProvider>
           <SettingsProvider>
             <Routes>
-            <Route path="/" element={<Auth />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/student-dashboard" element={<ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>} />
             <Route path="/join" element={<ProtectedRoute role="student"><JoinLesson /></ProtectedRoute>} />
             <Route path="/essay/:id" element={<ProtectedRoute role="student"><StudentWorkspace /></ProtectedRoute>} />
