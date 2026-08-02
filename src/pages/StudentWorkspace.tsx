@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2 } from "lucide-react";
+import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 
 const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } as const;
@@ -39,6 +40,7 @@ const StudentWorkspace = () => {
   const [loading, setLoading] = useState(true);
   const [showExit, setShowExit] = useState(false);
   const [remaining, setRemaining] = useState(SESSION_DURATION);
+  const [showDiscard, setShowDiscard] = useState(false);
   const lastSaved = useRef("");
 
   // Load essay + messages
@@ -65,6 +67,8 @@ const StudentWorkspace = () => {
       setIsSubmitted(!!e.is_submitted);
       setSoloMode(e.classroom_id == null);
       setMode(((e as { mode?: string }).mode as "classroom" | "solo" | "brainstorm") ?? (e.classroom_id ? "classroom" : "solo"));
+      const mins = (e as { duration_minutes?: number | null }).duration_minutes;
+      if (mins && mins > 0) setRemaining(mins * 60);
       lastSaved.current = e.content;
       const { data: m } = await supabase
         .from("messages")
