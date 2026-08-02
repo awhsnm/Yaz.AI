@@ -498,6 +498,13 @@ const TeacherReview = () => {
           )}
         </div>
       )}
+
+      <WritingPlayback
+        essayId={essay.id}
+        open={playbackOpen}
+        onOpenChange={setPlaybackOpen}
+        fallbackContent={essay.content}
+      />
     </div>
   );
 };
