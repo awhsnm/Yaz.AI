@@ -121,9 +121,11 @@ export type Database = {
           classroom_id: string | null
           content: string
           created_at: string
+          duration_minutes: number | null
           id: string
           is_submitted: boolean
           mode: string
+          pinned: boolean
           student_id: string
           subject: string
           topic: string
@@ -137,9 +139,11 @@ export type Database = {
           classroom_id?: string | null
           content?: string
           created_at?: string
+          duration_minutes?: number | null
           id?: string
           is_submitted?: boolean
           mode?: string
+          pinned?: boolean
           student_id: string
           subject?: string
           topic?: string
@@ -153,9 +157,11 @@ export type Database = {
           classroom_id?: string | null
           content?: string
           created_at?: string
+          duration_minutes?: number | null
           id?: string
           is_submitted?: boolean
           mode?: string
+          pinned?: boolean
           student_id?: string
           subject?: string
           topic?: string
