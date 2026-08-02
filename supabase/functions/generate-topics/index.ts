@@ -17,7 +17,11 @@ Rules:
 - NO academic jargon, no "discourse", "paradigm", "socio-cultural", no research-paper phrasing.
 - Topics must still be deep and thought-provoking, but instantly understandable at first read.
 - Each option must have a specific, arguable title (not vague).
-- Each option must include "focus": a 2-3 sentence core thesis statement in the same simple, friendly style (40-70 words).
+- Each option must include "focus": a DEEP, fully developed core thesis of 3 sentences (70-110 words), still in plain B1-B2 English. It must do all three of these, in order:
+  (1) state the main arguable claim clearly and take a definite stance (not "both sides have points");
+  (2) name the key nuance, condition or tension that makes the claim non-obvious (e.g. "this is true mainly when...", "the real problem is not X but Y");
+  (3) point to the analytical direction the essay should take — what kind of evidence or comparison would prove it.
+  Never write a vague, generic or descriptive thesis like "AI has both good and bad effects". It must be specific enough that a student can build 3 body paragraphs directly from it.
 - Each option must include "background": ONE rich research paragraph of 150-200 words with historical, cultural or technical context, real names, dates, numbers and events, still in plain B1-B2 English.
 - Each option must include "angles": 3-4 key arguments/perspectives. At least one MUST be a counterargument or nuance. Each is {"label":"short angle name like Over-reliance or Counterargument: algorithmic echo chambers","detail":"one sentence explaining it"}.
 - Each option must include "vocabulary": 3-4 useful terms, each {"term":"...","definition":"plain-English definition, max 20 words"}.
