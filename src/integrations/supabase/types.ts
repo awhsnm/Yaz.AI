@@ -305,6 +305,50 @@ export type Database = {
         }
         Relationships: []
       }
+      writing_events: {
+        Row: {
+          at: string
+          chars_added: number
+          created_at: string
+          essay_id: string
+          id: string
+          is_paste: boolean
+          snapshot: string
+          student_id: string
+          word_count: number
+        }
+        Insert: {
+          at?: string
+          chars_added?: number
+          created_at?: string
+          essay_id: string
+          id?: string
+          is_paste?: boolean
+          snapshot?: string
+          student_id: string
+          word_count?: number
+        }
+        Update: {
+          at?: string
+          chars_added?: number
+          created_at?: string
+          essay_id?: string
+          id?: string
+          is_paste?: boolean
+          snapshot?: string
+          student_id?: string
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "writing_events_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
