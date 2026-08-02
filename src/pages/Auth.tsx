@@ -238,6 +238,7 @@ const Auth = () => {
           </Tabs>
         </div>
       </motion.div>
+      <SchoolAccessModal open={schoolOpen} onOpenChange={setSchoolOpen} />
     </div>
   );
 };
