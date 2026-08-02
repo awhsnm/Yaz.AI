@@ -28,7 +28,16 @@ const PILLS = [
   { emoji: "🎭", text: "How K-pop beauty standards influence global youth self-image..." },
 ];
 
-type GeneratedTopic = { title: string; focus: string; background?: string; facts?: string[] };
+type Angle = { label: string; detail: string };
+type Vocab = { term: string; definition: string };
+type GeneratedTopic = {
+  title: string;
+  focus: string;
+  background?: string;
+  facts?: string[];
+  angles?: Angle[];
+  vocabulary?: Vocab[];
+};
 
 const ModeCards = () => {
   const { t } = useTranslation();
@@ -259,15 +268,56 @@ const ModeCards = () => {
                 <ChevronLeft className="w-3.5 h-3.5" />{t("modes.backToTopics", "Back to topics")}
               </button>
               <div>
+                <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-success mb-1">
+                  {t("modes.researchBrief", "Topic research brief")}
+                </p>
                 <h3 className="font-display font-bold text-lg text-foreground">{preview.title}</h3>
-                <p className="text-sm text-muted-foreground font-display mt-1">{preview.focus}</p>
+                <div className="mt-2 rounded-lg border-l-2 border-success bg-success/5 pl-3 py-2">
+                  <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-0.5">
+                    {t("modes.coreThesis", "Core thesis")}
+                  </p>
+                  <p className="text-sm font-display text-foreground">{preview.focus}</p>
+                </div>
               </div>
               {preview.background && (
                 <div className="rounded-lg border border-border bg-muted/40 p-3">
                   <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-1">
-                    {t("modes.background", "Background context")}
+                    {t("modes.background", "Background & context")}
                   </p>
                   <p className="text-sm font-display text-foreground leading-relaxed">{preview.background}</p>
+                </div>
+              )}
+              {preview.angles && preview.angles.length > 0 && (
+                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                  <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-2">
+                    {t("modes.angles", "Key arguments & perspectives to explore")}
+                  </p>
+                  <ul className="space-y-2">
+                    {preview.angles.map((a, i) => (
+                      <li key={i} className="text-sm font-display text-foreground flex gap-2">
+                        <span className="text-success">•</span>
+                        <span>
+                          <span className="font-semibold">{a.label}</span>
+                          {a.detail ? <span className="text-muted-foreground"> — {a.detail}</span> : null}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {preview.vocabulary && preview.vocabulary.length > 0 && (
+                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                  <p className="text-[10px] uppercase tracking-wide font-display font-semibold text-muted-foreground mb-2">
+                    {t("modes.vocabulary", "Key vocabulary & terms")}
+                  </p>
+                  <div className="space-y-1.5">
+                    {preview.vocabulary.map((v, i) => (
+                      <p key={i} className="text-sm font-display text-foreground">
+                        <span className="font-semibold">{v.term}</span>
+                        {v.definition ? <span className="text-muted-foreground"> — {v.definition}</span> : null}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               )}
               {preview.facts && preview.facts.length > 0 && (
@@ -285,7 +335,8 @@ const ModeCards = () => {
                 </div>
               )}
               <Button
-                className="w-full font-display"
+                size="lg"
+                className="w-full font-display sticky bottom-0"
                 disabled={creating}
                 onClick={() => startEssay(preview.title, brainSubject, "brainstorm")}
               >
