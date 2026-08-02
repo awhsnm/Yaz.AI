@@ -17,11 +17,13 @@ Rules:
 - NO academic jargon, no "discourse", "paradigm", "socio-cultural", no research-paper phrasing.
 - Topics must still be deep and thought-provoking, but instantly understandable at first read.
 - Each option must have a specific, arguable title (not vague).
-- Each option must include "focus": a DEEP, fully developed core thesis of 3 sentences (70-110 words), still in plain B1-B2 English. It must do all three of these, in order:
+- Each option must include "focus": a DEEP core thesis of EXACTLY 2 or 3 full sentences (minimum 45 words, ideally 60-100), still in plain B1-B2 English. NEVER one sentence. It must do all three of these, in order:
   (1) state the main arguable claim clearly and take a definite stance (not "both sides have points");
   (2) name the key nuance, condition or tension that makes the claim non-obvious (e.g. "this is true mainly when...", "the real problem is not X but Y");
   (3) point to the analytical direction the essay should take — what kind of evidence or comparison would prove it.
   Never write a vague, generic or descriptive thesis like "AI has both good and bad effects". It must be specific enough that a student can build 3 body paragraphs directly from it.
+  Required depth, match this style and length exactly:
+  "While automated AI systems increase speed in collaborative environments, offloading core decision-making risks cognitive passivity and diminishes critical evaluation among team members. To preserve human creativity, teams must position AI strictly as an analytical advisor rather than a primary decision-maker. Comparing teams that review AI output line by line with teams that accept it as final would show how much independent judgement is actually lost."
 - Each option must include "background": ONE rich research paragraph of 150-200 words with historical, cultural or technical context, real names, dates, numbers and events, still in plain B1-B2 English.
 - Each option must include "angles": 3-4 key arguments/perspectives. At least one MUST be a counterargument or nuance. Each is {"label":"short angle name like Over-reliance or Counterargument: algorithmic echo chambers","detail":"one sentence explaining it"}.
 - Each option must include "vocabulary": 3-4 useful terms, each {"term":"...","definition":"plain-English definition, max 20 words"}.
@@ -92,6 +94,48 @@ serve(async (req) => {
       parsed = {};
     }
     const topics = Array.isArray(parsed.topics) ? parsed.topics.slice(0, 3) : [];
+
+    // Guarantee 2-3 sentence, substantive theses — repair any that came back too short.
+    const isThin = (f?: string) => {
+      const s = (f ?? "").trim();
+      const sentences = s.split(/[.!?]+\s/).filter(Boolean).length;
+      return s.split(/\s+/).filter(Boolean).length < 45 || sentences < 2;
+    };
+    const thin = topics.filter((tp) => isThin(tp.focus));
+    if (thin.length) {
+      try {
+        const fixResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3.6-flash",
+            messages: [
+              {
+                role: "system",
+                content:
+                  `Rewrite each core thesis so it is EXACTLY 2-3 sentences, 60-100 words, plain B1-B2 English: (1) a definite arguable stance, (2) the nuance or counter-argument that makes it non-obvious, (3) the analytical direction/evidence that would prove it. Return ONLY {"theses":["...","..."]} in the same order.`,
+              },
+              {
+                role: "user",
+                content: JSON.stringify(thin.map((tp) => ({ title: tp.title, thesis: tp.focus }))),
+              },
+            ],
+            response_format: { type: "json_object" },
+          }),
+        });
+        if (fixResp.ok) {
+          const fixData = await fixResp.json();
+          const fixed = JSON.parse(fixData.choices?.[0]?.message?.content ?? "{}")?.theses;
+          if (Array.isArray(fixed)) {
+            thin.forEach((tp, i) => {
+              if (typeof fixed[i] === "string" && fixed[i].trim()) tp.focus = fixed[i].trim();
+            });
+          }
+        }
+      } catch (err) {
+        console.error("thesis repair failed:", err);
+      }
+    }
 
     return new Response(JSON.stringify({ topics }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

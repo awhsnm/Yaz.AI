@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageSelector from "@/components/LanguageSelector";
+import SchoolAccessModal from "@/components/SchoolAccessModal";
 
 const PILLARS = [
   { key: "brainstorm", icon: Sparkles, tint: "bg-emerald-500/10 border-emerald-500/30", dot: "bg-emerald-500" },
@@ -18,6 +19,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [active, setActive] = useState<string>("classroom");
+  const [schoolOpen, setSchoolOpen] = useState(false);
   const pillar = PILLARS.find((p) => p.key === active)!;
   const points = [1, 2, 3].map((i) => t(`landing.pillars.${pillar.key}P${i}`));
 
@@ -223,7 +225,7 @@ const Landing = () => {
             <p className="text-xs font-display text-muted-foreground">
               {t("landing.footer.langNote")}
             </p>
-            <Button size="sm" className="font-display mt-4" onClick={() => navigate("/auth")}>
+            <Button size="sm" className="font-display mt-4" onClick={() => setSchoolOpen(true)}>
               <Mail className="w-3.5 h-3.5 mr-1" />{t("landing.footer.onboarding")}
             </Button>
           </div>
@@ -232,6 +234,7 @@ const Landing = () => {
           © {new Date().getFullYear()} FocusWrite AI
         </div>
       </footer>
+      <SchoolAccessModal open={schoolOpen} onOpenChange={setSchoolOpen} />
     </div>
   );
 };

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LanguageSelector from "@/components/LanguageSelector";
+import SchoolAccessModal from "@/components/SchoolAccessModal";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +25,7 @@ const Auth = () => {
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("login");
   const [signupRole, setSignupRole] = useState<"student" | "teacher" | null>(null);
+  const [schoolOpen, setSchoolOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && user && role) {
@@ -224,11 +226,9 @@ const Auth = () => {
                     </div>
                     <div className="space-y-2 pt-1">
                       <p className="text-xs text-muted-foreground">{t("auth.wantIntroduce")}</p>
-                      <Button variant="outline" className="w-full" asChild>
-                        <a href="mailto:hello@focuswrite.ai?subject=FocusWrite%20AI%20School%20Access">
-                          <Mail className="w-4 h-4 mr-2" />
-                          {t("auth.requestAccess")}
-                        </a>
+                      <Button variant="outline" className="w-full" onClick={() => setSchoolOpen(true)}>
+                        <Mail className="w-4 h-4 mr-2" />
+                        {t("auth.requestAccess")}
                       </Button>
                     </div>
                   </motion.div>
@@ -238,6 +238,7 @@ const Auth = () => {
           </Tabs>
         </div>
       </motion.div>
+      <SchoolAccessModal open={schoolOpen} onOpenChange={setSchoolOpen} />
     </div>
   );
 };
