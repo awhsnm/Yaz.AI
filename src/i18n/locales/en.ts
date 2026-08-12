@@ -208,7 +208,7 @@ const en = {
     nav: {
       modes: "Modes",
       teachers: "For Teachers",
-      login: "Teacher Login",
+      login: "\u00a0Login",
     },
     hero: {
       badge: "Built for Kazakhstani high schools",
