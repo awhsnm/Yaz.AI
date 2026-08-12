@@ -209,7 +209,7 @@ const ru: Dict = {
     nav: {
       modes: "Режимы",
       teachers: "Учителям",
-      login: "Вход для учителя",
+      login: "\u00a0Вход",
     },
     hero: {
       badge: "Создано для школ Казахстана",
