@@ -211,9 +211,9 @@ const en = {
       login: "\u00a0Login",
     },
     hero: {
-      badge: "Built for Kazakhstani high schools",
+      badge: "Built for Kazakhstan high schoolers",
       title: "Empowering Academic Integrity with Socratic AI Writing Guidance",
-      sub: "The smart writing platform built for Kazakhstani high schools — helping students write independently while giving teachers total transparency.",
+      sub: "The smart writing platform built for Kazakhstan high schoolers — helping students write independently while giving teachers total transparency.",
       demo: "Try Demo Class",
     },
     mock: {
