@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { KeyRound, PenLine, Sparkles, Loader2, ArrowRight, Clock, ShieldAlert, MessageSquareOff, ChevronLeft } from "lucide-react";
+import { KeyRound, PenLine, Sparkles, Loader2, ArrowRight, Clock, ShieldAlert, MessageSquareOff, ChevronLeft, Mic, MicOff, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SUBJECTS = ["English", "Russian Literature", "Kazakh Literature", "General"];
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-topics`;
+const OCR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-image-text`;
+
 
 const DURATIONS = [
   { value: "20", label: "20 min · Speedrun" },
@@ -59,6 +61,112 @@ const ModeCards = () => {
   const [generating, setGenerating] = useState(false);
   const [topics, setTopics] = useState<GeneratedTopic[]>([]);
   const [preview, setPreview] = useState<GeneratedTopic | null>(null);
+
+  // Voice-to-text (Web Speech API)
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const baseTextRef = useRef("");
+
+  // Image OCR
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
+
+  useEffect(() => () => { try { recognitionRef.current?.stop(); } catch { /* noop */ } }, []);
+
+  const toggleListening = () => {
+    if (listening) {
+      try { recognitionRef.current?.stop(); } catch { /* noop */ }
+      setListening(false);
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      toast({
+        title: t("modes.micUnsupported", "Voice input not supported"),
+        description: t("modes.micUnsupportedDesc", "Try Chrome or Edge to dictate your thoughts."),
+        variant: "destructive",
+      });
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = navigator.language || "en-US";
+    baseTextRef.current = brainInput ? brainInput.trimEnd() + " " : "";
+    rec.onresult = (event: any) => {
+      let final = "";
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const chunk = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += chunk;
+        else interim += chunk;
+      }
+      if (final) baseTextRef.current = (baseTextRef.current + final).replace(/\s+/g, " ") + " ";
+      setBrainInput((baseTextRef.current + interim).trimStart());
+    };
+    rec.onerror = (e: any) => {
+      setListening(false);
+      if (e?.error !== "aborted") {
+        toast({
+          title: t("modes.micFailed", "Microphone error"),
+          description: e?.error === "not-allowed"
+            ? t("modes.micDenied", "Microphone access was blocked in your browser.")
+            : String(e?.error ?? ""),
+          variant: "destructive",
+        });
+      }
+    };
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      setListening(false);
+    }
+  };
+
+  const handleImage = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 8 * 1024 * 1024) {
+      toast({ title: t("modes.imgTooLarge", "Image is too large (max 8 MB)"), variant: "destructive" });
+      return;
+    }
+    setOcrBusy(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Could not read the image"));
+        reader.readAsDataURL(file);
+      });
+      const resp = await fetch(OCR_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data?.error || `Error ${resp.status}`);
+      const extracted = String(data.text ?? "").trim();
+      if (!extracted) throw new Error(t("modes.imgNoText", "No readable text found in that image."));
+      setBrainInput((prev) => (prev.trim() ? `${prev.trim()}\n\n${extracted}` : extracted));
+      toast({ title: t("modes.imgAdded", "Notes added from your image") });
+    } catch (e) {
+      toast({
+        title: t("modes.imgFailed", "Could not read that image"),
+        description: e instanceof Error ? e.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setOcrBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
 
   const soloMinutes = durationChoice === "custom" ? Math.max(5, Math.min(180, Number(customDuration) || 45)) : Number(durationChoice);
 
@@ -379,14 +487,56 @@ const ModeCards = () => {
                     </button>
                   ))}
                 </div>
-                <Textarea
-                  value={brainInput}
-                  onChange={(e) => setBrainInput(e.target.value)}
-                  placeholder={t("modes.brainInputPh")}
-                  className="min-h-[120px] font-display"
-                  disabled={generating}
-                />
+                <div className="relative">
+                  <Textarea
+                    value={brainInput}
+                    onChange={(e) => setBrainInput(e.target.value)}
+                    placeholder={t("modes.brainInputPh")}
+                    className="min-h-[120px] font-display pb-12"
+                    disabled={generating}
+                  />
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={toggleListening}
+                      disabled={generating}
+                      aria-label={listening ? t("modes.micStop", "Stop dictation") : t("modes.micStart", "Dictate your thoughts")}
+                      aria-pressed={listening}
+                      className={`h-8 w-8 rounded-full border flex items-center justify-center transition-colors ${
+                        listening
+                          ? "bg-destructive text-destructive-foreground border-destructive animate-pulse"
+                          : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-success"
+                      }`}
+                    >
+                      {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      disabled={generating || ocrBusy}
+                      aria-label={t("modes.imgUpload", "Upload a photo of your notes")}
+                      className="h-8 w-8 rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:border-success flex items-center justify-center transition-colors disabled:opacity-60"
+                    >
+                      {ocrBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                    </button>
+                    <span className="text-[11px] font-display text-muted-foreground">
+                      {listening
+                        ? t("modes.micListening", "Listening…")
+                        : ocrBusy
+                        ? t("modes.imgReading", "Reading your image…")
+                        : t("modes.inputHint", "Speak or upload a photo of your notes")}
+                    </span>
+                  </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImage(e.target.files?.[0])}
+                  />
+                </div>
               </div>
+
               <div>
                 <Label className="font-display">{t("join.subject")}</Label>
                 <Select value={brainSubject} onValueChange={setBrainSubject}>

@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.essay-feedback]
 verify_jwt = false
+
+[functions.extract-image-text]
+verify_jwt = false
