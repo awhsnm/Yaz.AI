@@ -487,14 +487,56 @@ const ModeCards = () => {
                     </button>
                   ))}
                 </div>
-                <Textarea
-                  value={brainInput}
-                  onChange={(e) => setBrainInput(e.target.value)}
-                  placeholder={t("modes.brainInputPh")}
-                  className="min-h-[120px] font-display"
-                  disabled={generating}
-                />
+                <div className="relative">
+                  <Textarea
+                    value={brainInput}
+                    onChange={(e) => setBrainInput(e.target.value)}
+                    placeholder={t("modes.brainInputPh")}
+                    className="min-h-[120px] font-display pb-12"
+                    disabled={generating}
+                  />
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={toggleListening}
+                      disabled={generating}
+                      aria-label={listening ? t("modes.micStop", "Stop dictation") : t("modes.micStart", "Dictate your thoughts")}
+                      aria-pressed={listening}
+                      className={`h-8 w-8 rounded-full border flex items-center justify-center transition-colors ${
+                        listening
+                          ? "bg-destructive text-destructive-foreground border-destructive animate-pulse"
+                          : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-success"
+                      }`}
+                    >
+                      {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      disabled={generating || ocrBusy}
+                      aria-label={t("modes.imgUpload", "Upload a photo of your notes")}
+                      className="h-8 w-8 rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:border-success flex items-center justify-center transition-colors disabled:opacity-60"
+                    >
+                      {ocrBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                    </button>
+                    <span className="text-[11px] font-display text-muted-foreground">
+                      {listening
+                        ? t("modes.micListening", "Listening…")
+                        : ocrBusy
+                        ? t("modes.imgReading", "Reading your image…")
+                        : t("modes.inputHint", "Speak or upload a photo of your notes")}
+                    </span>
+                  </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImage(e.target.files?.[0])}
+                  />
+                </div>
               </div>
+
               <div>
                 <Label className="font-display">{t("join.subject")}</Label>
                 <Select value={brainSubject} onValueChange={setBrainSubject}>
