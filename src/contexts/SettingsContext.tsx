@@ -56,9 +56,13 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [theme]);
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--editor-size", SIZE_MAP[textSize]);
+    const root = document.documentElement;
+    root.style.setProperty("--editor-size", SIZE_MAP[textSize]);
+    root.style.fontSize = ROOT_SIZE_MAP[textSize];
+    root.dataset.textSize = textSize;
     localStorage.setItem("textSize", textSize);
   }, [textSize]);
+
 
   useEffect(() => {
     i18n.changeLanguage(lang);
