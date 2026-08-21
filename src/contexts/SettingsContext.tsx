@@ -11,6 +11,15 @@ const SIZE_MAP: Record<TextSize, string> = {
   large: "1.375rem",
 };
 
+// Base root font size — scales the whole UI (rem-based) so the setting
+// is visible everywhere, not just inside the student editor.
+const ROOT_SIZE_MAP: Record<TextSize, string> = {
+  small: "14px",
+  medium: "16px",
+  large: "18px",
+};
+
+
 interface Ctx {
   theme: Theme;
   setTheme: (t: Theme) => void;
@@ -47,9 +56,13 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [theme]);
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--editor-size", SIZE_MAP[textSize]);
+    const root = document.documentElement;
+    root.style.setProperty("--editor-size", SIZE_MAP[textSize]);
+    root.style.fontSize = ROOT_SIZE_MAP[textSize];
+    root.dataset.textSize = textSize;
     localStorage.setItem("textSize", textSize);
   }, [textSize]);
+
 
   useEffect(() => {
     i18n.changeLanguage(lang);
