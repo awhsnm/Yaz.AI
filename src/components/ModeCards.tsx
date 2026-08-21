@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { KeyRound, PenLine, Sparkles, Loader2, ArrowRight, Clock, ShieldAlert, MessageSquareOff, ChevronLeft } from "lucide-react";
+import { KeyRound, PenLine, Sparkles, Loader2, ArrowRight, Clock, ShieldAlert, MessageSquareOff, ChevronLeft, Mic, MicOff, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SUBJECTS = ["English", "Russian Literature", "Kazakh Literature", "General"];
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-topics`;
+const OCR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-image-text`;
+
 
 const DURATIONS = [
   { value: "20", label: "20 min · Speedrun" },
