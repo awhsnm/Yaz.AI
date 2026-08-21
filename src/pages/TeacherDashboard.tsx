@@ -61,16 +61,37 @@ const TeacherDashboard = () => {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [{ data: c }, { data: e }, { data: profiles }] = await Promise.all([
-      supabase.from("classrooms").select("*").eq("teacher_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("essays").select("id, topic, subject, content, is_submitted, updated_at, student_id, classroom_id").order("updated_at", { ascending: false }),
+    const { data: c } = await supabase
+      .from("classrooms")
+      .select("*")
+      .eq("teacher_id", user.id)
+      .order("created_at", { ascending: false });
+
+    const classroomIds = (c ?? []).map((x) => x.id);
+    setClassrooms((c ?? []) as Classroom[]);
+
+    // Privacy: only classroom essays from this teacher's own lessons.
+    // Solo Practice and Brainstorm drafts (classroom_id IS NULL) stay private to the student.
+    if (classroomIds.length === 0) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    const [{ data: e }, { data: profiles }] = await Promise.all([
+      supabase
+        .from("essays")
+        .select("id, topic, subject, content, is_submitted, updated_at, student_id, classroom_id")
+        .not("classroom_id", "is", null)
+        .in("classroom_id", classroomIds)
+        .order("updated_at", { ascending: false }),
       supabase.from("profiles").select("id, full_name"),
     ]);
     const map = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
-    setClassrooms((c ?? []) as Classroom[]);
     setRows((e ?? []).map((r) => ({ ...r, student_name: map.get(r.student_id) ?? null })));
     setLoading(false);
   }, [user]);
+
 
   useEffect(() => { load(); }, [load]);
 
