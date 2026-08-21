@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { KeyRound, PenLine, Sparkles, Loader2, ArrowRight, Clock, ShieldAlert, MessageSquareOff, ChevronLeft, Mic, MicOff, ImagePlus } from "lucide-react";
+import { KeyRound, PenLine, Sparkles, Loader2, ArrowRight, Clock, ShieldAlert, MessageSquareOff, ChevronLeft, Mic, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -502,13 +502,13 @@ const ModeCards = () => {
                       disabled={generating}
                       aria-label={listening ? t("modes.micStop", "Stop dictation") : t("modes.micStart", "Dictate your thoughts")}
                       aria-pressed={listening}
-                      className={`h-8 w-8 rounded-full border flex items-center justify-center transition-colors ${
+                      className={`p-3 rounded-full transition-all flex items-center justify-center ${
                         listening
-                          ? "bg-destructive text-destructive-foreground border-destructive animate-pulse"
-                          : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-success"
+                          ? "bg-destructive/10 text-destructive ring-2 ring-destructive animate-pulse"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
                       }`}
                     >
-                      {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      <Mic className={`w-5 h-5 ${listening ? "text-destructive" : "text-foreground"}`} />
                     </button>
                     <button
                       type="button"
