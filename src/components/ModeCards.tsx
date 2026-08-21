@@ -62,6 +62,112 @@ const ModeCards = () => {
   const [topics, setTopics] = useState<GeneratedTopic[]>([]);
   const [preview, setPreview] = useState<GeneratedTopic | null>(null);
 
+  // Voice-to-text (Web Speech API)
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const baseTextRef = useRef("");
+
+  // Image OCR
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
+
+  useEffect(() => () => { try { recognitionRef.current?.stop(); } catch { /* noop */ } }, []);
+
+  const toggleListening = () => {
+    if (listening) {
+      try { recognitionRef.current?.stop(); } catch { /* noop */ }
+      setListening(false);
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      toast({
+        title: t("modes.micUnsupported", "Voice input not supported"),
+        description: t("modes.micUnsupportedDesc", "Try Chrome or Edge to dictate your thoughts."),
+        variant: "destructive",
+      });
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = navigator.language || "en-US";
+    baseTextRef.current = brainInput ? brainInput.trimEnd() + " " : "";
+    rec.onresult = (event: any) => {
+      let final = "";
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const chunk = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += chunk;
+        else interim += chunk;
+      }
+      if (final) baseTextRef.current = (baseTextRef.current + final).replace(/\s+/g, " ") + " ";
+      setBrainInput((baseTextRef.current + interim).trimStart());
+    };
+    rec.onerror = (e: any) => {
+      setListening(false);
+      if (e?.error !== "aborted") {
+        toast({
+          title: t("modes.micFailed", "Microphone error"),
+          description: e?.error === "not-allowed"
+            ? t("modes.micDenied", "Microphone access was blocked in your browser.")
+            : String(e?.error ?? ""),
+          variant: "destructive",
+        });
+      }
+    };
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      setListening(false);
+    }
+  };
+
+  const handleImage = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 8 * 1024 * 1024) {
+      toast({ title: t("modes.imgTooLarge", "Image is too large (max 8 MB)"), variant: "destructive" });
+      return;
+    }
+    setOcrBusy(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Could not read the image"));
+        reader.readAsDataURL(file);
+      });
+      const resp = await fetch(OCR_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data?.error || `Error ${resp.status}`);
+      const extracted = String(data.text ?? "").trim();
+      if (!extracted) throw new Error(t("modes.imgNoText", "No readable text found in that image."));
+      setBrainInput((prev) => (prev.trim() ? `${prev.trim()}\n\n${extracted}` : extracted));
+      toast({ title: t("modes.imgAdded", "Notes added from your image") });
+    } catch (e) {
+      toast({
+        title: t("modes.imgFailed", "Could not read that image"),
+        description: e instanceof Error ? e.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setOcrBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+
   const soloMinutes = durationChoice === "custom" ? Math.max(5, Math.min(180, Number(customDuration) || 45)) : Number(durationChoice);
 
   const startEssay = async (topic: string, subject: string, mode: "solo" | "brainstorm", minutes?: number) => {
