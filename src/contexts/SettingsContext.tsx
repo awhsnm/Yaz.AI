@@ -11,6 +11,15 @@ const SIZE_MAP: Record<TextSize, string> = {
   large: "1.375rem",
 };
 
+// Base root font size — scales the whole UI (rem-based) so the setting
+// is visible everywhere, not just inside the student editor.
+const ROOT_SIZE_MAP: Record<TextSize, string> = {
+  small: "14px",
+  medium: "16px",
+  large: "18px",
+};
+
+
 interface Ctx {
   theme: Theme;
   setTheme: (t: Theme) => void;
