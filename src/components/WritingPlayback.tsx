@@ -74,11 +74,6 @@ const WritingPlayback = ({
   const keyEvents = useMemo(() => analysed.filter((e) => e.significant), [analysed]);
   const list: AnalysedEvent[] = view === "key" ? (keyEvents.length ? keyEvents : analysed) : analysed;
 
-  useEffect(() => {
-    setPos(0);
-    setPlaying(false);
-  }, [view]);
-
   const total = analysed.length ? analysed[analysed.length - 1].offset : 0;
   const current = list[Math.min(pos, Math.max(list.length - 1, 0))];
   const previous = pos > 0 ? list[pos - 1] : null;
@@ -218,6 +213,12 @@ const WritingPlayback = ({
     setPos(i);
   }, [cancelTransition, list]);
 
+  useEffect(() => {
+    cancelTransition(list[0]?.raw.snapshot ?? "");
+    setPos(0);
+    setPlaying(false);
+  }, [view, cancelTransition, list]);
+
   // Highlight only the delta versus the previously *displayed* version.
   const rendered = useMemo(() => {
     if (!current) return null;
@@ -347,8 +348,16 @@ const WritingPlayback = ({
               <Button
                 size="sm"
                 onClick={() => {
-                  if (pos >= list.length - 1) setPos(0);
-                  setPlaying((p) => !p);
+                  if (playing) {
+                    cancelTransition(current?.raw.snapshot ?? "");
+                    setPlaying(false);
+                    return;
+                  }
+                  if (pos >= list.length - 1) {
+                    cancelTransition(list[0]?.raw.snapshot ?? "");
+                    setPos(0);
+                  }
+                  setPlaying(true);
                 }}
                 className="font-display"
                 aria-label={playing ? "Pause playback" : "Play playback"}
