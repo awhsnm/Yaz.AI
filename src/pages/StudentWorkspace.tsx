@@ -173,9 +173,10 @@ const StudentWorkspace = () => {
     (async () => {
       await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
       setIsSubmitted(true);
+      if (researchMode) setShowQuestionnaire(true);
       toast({ title: t("workspace.timeUp"), description: t("workspace.autoSubmitted") });
     })();
-  }, [remaining, loading, isSubmitted, essay, essayId, toast, t, timed]);
+  }, [remaining, loading, isSubmitted, essay, essayId, toast, t, timed, researchMode]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
@@ -240,10 +241,36 @@ const StudentWorkspace = () => {
     await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
     await coach.notifySubmitted();
     setSaving(false);
+    setIsSubmitted(true);
+    // Research pilot only: collect the post-writing questionnaire before leaving.
+    if (researchMode) { setShowQuestionnaire(true); return; }
     // Solo Practice ends in the evaluation hub instead of the dashboard.
     if (mode === "solo") navigate(`/evaluation/${essayId}`);
     else navigate("/student-dashboard");
   };
+
+  const saveQuestionnaire = async (answers: QuestionnaireAnswers | null) => {
+    if (!essayId || !user) { navigate("/student-dashboard"); return; }
+    setQuestionnaireSaving(true);
+    if (answers) {
+      const { data: p } = await supabase
+        .from("research_participants")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (p?.id) {
+        await supabase.from("research_questionnaires").insert({
+          essay_id: essayId,
+          participant_id: p.id,
+          answers,
+        });
+      }
+    }
+    setQuestionnaireSaving(false);
+    setShowQuestionnaire(false);
+    navigate("/student-dashboard");
+  };
+
 
   const requestSubmit = () => {
     if (wordCount < MIN_WORDS) { setShowLowWords(true); return; }
