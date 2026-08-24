@@ -44,6 +44,10 @@ const StudentWorkspace = () => {
   const [showExit, setShowExit] = useState(false);
   const [remaining, setRemaining] = useState(SESSION_DURATION);
   const [showDiscard, setShowDiscard] = useState(false);
+  // --- research mode (additive; false for every existing essay) ---
+  const [researchMode, setResearchMode] = useState(false);
+  const [consented, setConsented] = useState(true);
+  const [consentSaving, setConsentSaving] = useState(false);
   const lastSaved = useRef("");
   const lastLogged = useRef("");
   const pendingPaste = useRef(0);
