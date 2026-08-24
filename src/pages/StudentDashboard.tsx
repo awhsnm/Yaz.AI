@@ -161,7 +161,13 @@ const StudentDashboard = () => {
                 >
                   <div className="flex items-start gap-2 p-4">
                     <button
-                      onClick={() => navigate(e.is_submitted || e.evaluated ? `/feedback/${e.id}` : `/essay/${e.id}`)}
+                      onClick={() => navigate(
+                        e.is_submitted && e.mode === "solo"
+                          ? `/evaluation/${e.id}`
+                          : e.is_submitted || e.evaluated
+                            ? `/feedback/${e.id}`
+                            : `/essay/${e.id}`
+                      )}
                       className="min-w-0 flex-1 text-left"
                     >
                       <div className="flex items-center gap-2 mb-1 text-xs font-display">

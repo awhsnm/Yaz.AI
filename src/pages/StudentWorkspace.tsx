@@ -237,7 +237,9 @@ const StudentWorkspace = () => {
     await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
     await coach.notifySubmitted();
     setSaving(false);
-    navigate("/student-dashboard");
+    // Solo Practice ends in the evaluation hub instead of the dashboard.
+    if (mode === "solo") navigate(`/evaluation/${essayId}`);
+    else navigate("/student-dashboard");
   };
 
   const requestSubmit = () => {

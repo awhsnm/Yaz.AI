@@ -1,0 +1,1 @@
+ALTER TABLE public.essays ADD COLUMN IF NOT EXISTS ai_evaluation jsonb, ADD COLUMN IF NOT EXISTS ai_evaluation_at timestamp with time zone, ADD COLUMN IF NOT EXISTS revision_count integer NOT NULL DEFAULT 0;
