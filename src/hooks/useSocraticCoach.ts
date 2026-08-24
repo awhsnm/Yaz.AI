@@ -43,6 +43,9 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   const active = researchMode && enabled && !isSubmitted && !!essayId;
 
   const [question, setQuestion] = useState<CoachQuestion | null>(null);
+  const [snoozed, setSnoozed] = useState(false);
+  const [pendingRatingId, setPendingRatingId] = useState<string | null>(null);
+  const [participantCode, setParticipantCode] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
   const [questionsUsed, setQuestionsUsed] = useState(0);
   const [stage, setStage] = useState<CoachStage>("planning");
