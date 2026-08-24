@@ -26,6 +26,8 @@ const MIN_WORDS = 100;
 const MAX_QUESTIONS = 5;
 const PAUSE_MS = 8000; // typing pause after a paragraph boundary
 const COOLDOWN_MS = 90000; // minimum gap between shown questions
+const SNOOZE_MS = 180000; // "Not now" hides the card for 3 minutes
+const AFTER_SNAPSHOT_MS = 60000; // resumed-typing window for the after snapshot
 
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
@@ -41,6 +43,9 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   const active = researchMode && enabled && !isSubmitted && !!essayId;
 
   const [question, setQuestion] = useState<CoachQuestion | null>(null);
+  const [snoozed, setSnoozed] = useState(false);
+  const [pendingRatingId, setPendingRatingId] = useState<string | null>(null);
+  const [participantCode, setParticipantCode] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
   const [questionsUsed, setQuestionsUsed] = useState(0);
   const [stage, setStage] = useState<CoachStage>("planning");
@@ -56,10 +61,21 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   const participantId = useRef<string | null>(null);
   const analysing = useRef(false);
   const pendingAfterFor = useRef<string | null>(null);
+  const snoozeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const afterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   textRef.current = text;
   stageRef.current = stage;
   pausedRef.current = paused;
+
+  // Clean up pending timers on unmount.
+  useEffect(
+    () => () => {
+      if (snoozeTimer.current) clearTimeout(snoozeTimer.current);
+      if (afterTimer.current) clearTimeout(afterTimer.current);
+    },
+    [],
+  );
 
   /** Ensure the pseudonymous participant record exists (P01, P02, …). */
   const ensureParticipant = useCallback(async () => {
@@ -68,8 +84,11 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
     if (error || !data) return null;
     const row = Array.isArray(data) ? data[0] : data;
     participantId.current = (row as { id: string }).id;
+    const code = (row as { participant_code?: string }).participant_code;
+    if (code) setParticipantCode(code);
     return participantId.current;
   }, []);
+
 
   // Load current budget for this essay.
   useEffect(() => {
@@ -199,12 +218,15 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
     return () => clearTimeout(t);
   }, [text, active, runAnalysis]);
 
-  /** Records whether the targeted paragraph changed after the intervention. */
+  /**
+   * Pairs an after-snapshot to the intervention: immediately (so the action is
+   * measurable right away) and again after 60s of resumed typing.
+   */
   const attachAfterSnapshot = useCallback(
     async (interventionId: string, paragraphIndex: number, before: string) => {
       pendingAfterFor.current = interventionId;
-      setTimeout(async () => {
-        if (pendingAfterFor.current !== interventionId) return;
+
+      const write = async () => {
         const afterId = await latestSnapshotId();
         const beforePara = before.split(/\n\s*\n/)[paragraphIndex] ?? null;
         const afterPara = textRef.current.split(/\n\s*\n/)[paragraphIndex] ?? null;
@@ -214,27 +236,45 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
           .from("coach_interventions")
           .update({ snapshot_after_id: afterId, target_paragraph_changed: changed })
           .eq("id", interventionId);
-      }, 60000);
+      };
+
+      await write();
+
+      if (afterTimer.current) clearTimeout(afterTimer.current);
+      afterTimer.current = setTimeout(() => {
+        if (pendingAfterFor.current !== interventionId) return;
+        write();
+      }, AFTER_SNAPSHOT_MS);
     },
     [latestSnapshotId],
   );
 
   const recordAction = useCallback(
-    async (
-      action: "answered" | "not_now" | "skipped",
-      reflection?: string,
-      helpfulness?: "helpful" | "not_helpful" | "not_sure" | null,
-    ) => {
+    async (action: "answered" | "not_now" | "skipped", reflection?: string) => {
       const q = question;
       if (!q) return;
+
+      // "Not now" snoozes the card for 3 minutes without discarding it.
+      if (action === "not_now") {
+        setSnoozed(true);
+        if (snoozeTimer.current) clearTimeout(snoozeTimer.current);
+        snoozeTimer.current = setTimeout(() => setSnoozed(false), SNOOZE_MS);
+        await supabase
+          .from("coach_interventions")
+          .update({ user_action: "not_now" })
+          .eq("id", q.interventionId);
+        return;
+      }
+
       const before = textRef.current;
       setQuestion(null);
+      setSnoozed(false);
+      setPendingRatingId(q.interventionId);
       await supabase
         .from("coach_interventions")
         .update({
           user_action: action,
           reflection_response: reflection?.trim() ? reflection.trim() : null,
-          question_helpfulness: helpfulness ?? null,
         })
         .eq("id", q.interventionId);
       attachAfterSnapshot(q.interventionId, q.paragraphIndex, before);
@@ -242,11 +282,31 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
     [question, attachAfterSnapshot],
   );
 
+  /** 1–5 star helpfulness rating recorded after an answer or skip. */
+  const submitRating = useCallback(
+    async (rating: number | null) => {
+      const id = pendingRatingId;
+      setPendingRatingId(null);
+      if (!id || rating === null) return;
+      await supabase
+        .from("coach_interventions")
+        .update({ helpfulness_rating: rating })
+        .eq("id", id);
+    },
+    [pendingRatingId],
+  );
+
   const togglePause = useCallback(async () => {
     if (!active) return;
     const next = !pausedRef.current;
     setPaused(next);
     pausedRef.current = next;
+    if (next) {
+      // Pausing hides any pending card for the rest of the session.
+      if (snoozeTimer.current) clearTimeout(snoozeTimer.current);
+      setSnoozed(false);
+      setQuestion(null);
+    }
     const pid = await ensureParticipant();
     if (!pid) return;
     await supabase.from("coach_pause_events").insert({
@@ -266,6 +326,9 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   return {
     active,
     question,
+    snoozed,
+    pendingRatingId,
+    participantCode,
     paused,
     busy,
     stage,
@@ -273,7 +336,9 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
     questionsMax: MAX_QUESTIONS,
     togglePause,
     recordAction,
+    submitRating,
     notifySave,
     notifySubmitted,
   };
 }
+
