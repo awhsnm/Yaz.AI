@@ -189,6 +189,30 @@ const StudentWorkspace = () => {
   const isTimeUp = remaining === 0;
   const isLowTime = remaining <= 300 && remaining > 0;
 
+  // Inert unless the essay is opted into research mode.
+  const coach = useSocraticCoach({
+    essayId,
+    researchMode,
+    text: essay,
+    isSubmitted,
+    enabled: researchMode && consented && !loading,
+  });
+
+  const acceptConsent = async () => {
+    if (!user) return;
+    setConsentSaving(true);
+    const { data } = await supabase.rpc("ensure_research_participant");
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      await supabase
+        .from("research_participants")
+        .update({ consented_at: new Date().toISOString(), consent_version: CONSENT_VERSION })
+        .eq("id", (row as { id: string }).id);
+    }
+    setConsentSaving(false);
+    setConsented(true);
+  };
+
   const saveDraft = async (leave: boolean) => {
     if (!essayId) return;
     setSaving(true);
@@ -196,6 +220,7 @@ const StudentWorkspace = () => {
     lastSaved.current = essay;
     setSaving(false);
     setShowLowWords(false);
+    coach.notifySave();
     if (leave) navigate("/student-dashboard");
     else toast({ title: t("workspace.draftSaved", "Draft saved") });
   };
@@ -204,6 +229,7 @@ const StudentWorkspace = () => {
     if (!essayId) return;
     setSaving(true);
     await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
+    await coach.notifySubmitted();
     setSaving(false);
     navigate("/student-dashboard");
   };
