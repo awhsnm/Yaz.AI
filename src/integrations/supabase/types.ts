@@ -112,6 +112,158 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_interventions: {
+        Row: {
+          coach_paused: boolean
+          created_at: string
+          essay_id: string
+          id: string
+          intervention_version: string | null
+          issue_category: string
+          model: string | null
+          model_version: string | null
+          paragraph_index: number | null
+          participant_id: string
+          question_helpfulness: string | null
+          question_shown: string | null
+          reflection_response: string | null
+          revision_type: string | null
+          snapshot_after_id: string | null
+          snapshot_before_id: string | null
+          suppressed_reason: string | null
+          system_prompt_version: string | null
+          target_paragraph_changed: boolean | null
+          text_stage: string
+          trigger_event: string
+          updated_at: string
+          user_action: string | null
+          word_count: number
+        }
+        Insert: {
+          coach_paused?: boolean
+          created_at?: string
+          essay_id: string
+          id?: string
+          intervention_version?: string | null
+          issue_category?: string
+          model?: string | null
+          model_version?: string | null
+          paragraph_index?: number | null
+          participant_id: string
+          question_helpfulness?: string | null
+          question_shown?: string | null
+          reflection_response?: string | null
+          revision_type?: string | null
+          snapshot_after_id?: string | null
+          snapshot_before_id?: string | null
+          suppressed_reason?: string | null
+          system_prompt_version?: string | null
+          target_paragraph_changed?: boolean | null
+          text_stage?: string
+          trigger_event: string
+          updated_at?: string
+          user_action?: string | null
+          word_count?: number
+        }
+        Update: {
+          coach_paused?: boolean
+          created_at?: string
+          essay_id?: string
+          id?: string
+          intervention_version?: string | null
+          issue_category?: string
+          model?: string | null
+          model_version?: string | null
+          paragraph_index?: number | null
+          participant_id?: string
+          question_helpfulness?: string | null
+          question_shown?: string | null
+          reflection_response?: string | null
+          revision_type?: string | null
+          snapshot_after_id?: string | null
+          snapshot_before_id?: string | null
+          suppressed_reason?: string | null
+          system_prompt_version?: string | null
+          target_paragraph_changed?: boolean | null
+          text_stage?: string
+          trigger_event?: string
+          updated_at?: string
+          user_action?: string | null
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_interventions_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_interventions_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "research_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_interventions_snapshot_after_id_fkey"
+            columns: ["snapshot_after_id"]
+            isOneToOne: false
+            referencedRelation: "writing_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_interventions_snapshot_before_id_fkey"
+            columns: ["snapshot_before_id"]
+            isOneToOne: false
+            referencedRelation: "writing_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_pause_events: {
+        Row: {
+          created_at: string
+          essay_id: string
+          id: string
+          participant_id: string
+          paused: boolean
+          word_count: number
+        }
+        Insert: {
+          created_at?: string
+          essay_id: string
+          id?: string
+          participant_id: string
+          paused: boolean
+          word_count?: number
+        }
+        Update: {
+          created_at?: string
+          essay_id?: string
+          id?: string
+          participant_id?: string
+          paused?: boolean
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_pause_events_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_pause_events_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "research_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       essays: {
         Row: {
           ai_checked_at: string | null
@@ -119,6 +271,7 @@ export type Database = {
           ai_feedback_at: string | null
           ai_probability: number | null
           classroom_id: string | null
+          coach_questions_used: number
           content: string
           created_at: string
           duration_minutes: number | null
@@ -126,8 +279,10 @@ export type Database = {
           is_submitted: boolean
           mode: string
           pinned: boolean
+          research_mode: boolean
           student_id: string
           subject: string
+          text_stage: string
           topic: string
           updated_at: string
         }
@@ -137,6 +292,7 @@ export type Database = {
           ai_feedback_at?: string | null
           ai_probability?: number | null
           classroom_id?: string | null
+          coach_questions_used?: number
           content?: string
           created_at?: string
           duration_minutes?: number | null
@@ -144,8 +300,10 @@ export type Database = {
           is_submitted?: boolean
           mode?: string
           pinned?: boolean
+          research_mode?: boolean
           student_id: string
           subject?: string
+          text_stage?: string
           topic?: string
           updated_at?: string
         }
@@ -155,6 +313,7 @@ export type Database = {
           ai_feedback_at?: string | null
           ai_probability?: number | null
           classroom_id?: string | null
+          coach_questions_used?: number
           content?: string
           created_at?: string
           duration_minutes?: number | null
@@ -162,8 +321,10 @@ export type Database = {
           is_submitted?: boolean
           mode?: string
           pinned?: boolean
+          research_mode?: boolean
           student_id?: string
           subject?: string
+          text_stage?: string
           topic?: string
           updated_at?: string
         }
@@ -284,6 +445,36 @@ export type Database = {
         }
         Relationships: []
       }
+      research_participants: {
+        Row: {
+          consent_version: string | null
+          consented_at: string | null
+          created_at: string
+          id: string
+          participant_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consent_version?: string | null
+          consented_at?: string | null
+          created_at?: string
+          id?: string
+          participant_code: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consent_version?: string | null
+          consented_at?: string | null
+          created_at?: string
+          id?: string
+          participant_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -354,11 +545,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_research_participant: {
+        Args: never
+        Returns: {
+          consent_version: string | null
+          consented_at: string | null
+          created_at: string
+          id: string
+          participant_code: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "research_participants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      student_owns_essay: {
+        Args: { _essay_id: string; _student: string }
         Returns: boolean
       }
       teacher_owns_essay_classroom: {
