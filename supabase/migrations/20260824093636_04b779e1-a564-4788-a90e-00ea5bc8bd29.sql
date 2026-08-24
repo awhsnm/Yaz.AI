@@ -1,0 +1,1 @@
+ALTER TABLE public.essays ADD COLUMN IF NOT EXISTS topic_brief jsonb;

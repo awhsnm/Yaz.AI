@@ -284,6 +284,7 @@ export type Database = {
           subject: string
           text_stage: string
           topic: string
+          topic_brief: Json | null
           updated_at: string
         }
         Insert: {
@@ -305,6 +306,7 @@ export type Database = {
           subject?: string
           text_stage?: string
           topic?: string
+          topic_brief?: Json | null
           updated_at?: string
         }
         Update: {
@@ -326,6 +328,7 @@ export type Database = {
           subject?: string
           text_stage?: string
           topic?: string
+          topic_brief?: Json | null
           updated_at?: string
         }
         Relationships: [
