@@ -17,7 +17,11 @@ import {
 export type WritingEvent = RawWritingEvent;
 
 const SPEEDS = [0.5, 1, 2, 4, 8];
-const BASE_STEP_MS = 1200;
+const BASE_CHARS_PER_SECOND = 55;
+const MAX_TRANSITION_MS = 1500;
+const MAX_GAP_MS = 500;
+const GAP_COMPRESSION = 0.1;
+const DELETION_SPEED_MULTIPLIER = 2;
 const LEGEND: EventKind[] = ["typing", "insertion", "deletion", "paste", "save", "submit", "pause"];
 
 const WritingPlayback = ({
@@ -37,7 +41,17 @@ const WritingPlayback = ({
   const [pos, setPos] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const timer = useRef<number | null>(null);
+  const [displayedText, setDisplayedText] = useState("");
+  const [transitioning, setTransitioning] = useState(false);
+  const delayTimer = useRef<number | null>(null);
+  const animationFrame = useRef<number | null>(null);
+  const animationRun = useRef(0);
+  const automaticAdvance = useRef(false);
+  const speedRef = useRef(speed);
+
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
 
   useEffect(() => {
     if (!open) return;
@@ -70,32 +84,149 @@ const WritingPlayback = ({
   const previous = pos > 0 ? list[pos - 1] : null;
   const pasteCount = analysed.filter((e) => e.kind === "paste").length;
 
+  const cancelTransition = useCallback((fullText?: string) => {
+    animationRun.current += 1;
+    automaticAdvance.current = false;
+    if (animationFrame.current !== null) {
+      window.cancelAnimationFrame(animationFrame.current);
+      animationFrame.current = null;
+    }
+    if (delayTimer.current !== null) {
+      window.clearTimeout(delayTimer.current);
+      delayTimer.current = null;
+    }
+    setTransitioning(false);
+    if (fullText !== undefined) setDisplayedText(fullText);
+  }, []);
+
+  // Animate only automatically advanced snapshots. Direct navigation always shows
+  // the selected snapshot immediately.
   useEffect(() => {
-    if (!playing || list.length === 0) return;
+    const nextText = current?.raw.snapshot ?? "";
+    const previousText = previous?.raw.snapshot ?? "";
+    const shouldAnimate = automaticAdvance.current;
+    automaticAdvance.current = false;
+
+    animationRun.current += 1;
+    const run = animationRun.current;
+    if (animationFrame.current !== null) window.cancelAnimationFrame(animationFrame.current);
+
+    if (!shouldAnimate || !current) {
+      setDisplayedText(nextText);
+      setTransitioning(false);
+      return;
+    }
+
+    const change = diffRange(previousText, nextText);
+    if (change.added === 0 && change.removed === 0) {
+      setDisplayedText(nextText);
+      setTransitioning(false);
+      return;
+    }
+
+    const playbackSpeed = speedRef.current;
+    const deletionUnits = change.removed / DELETION_SPEED_MULTIPLIER;
+    const totalUnits = deletionUnits + change.added;
+    const naturalDuration = (totalUnits / (BASE_CHARS_PER_SECOND * playbackSpeed)) * 1000;
+    const duration = Math.max(1, Math.min(naturalDuration, MAX_TRANSITION_MS / playbackSpeed));
+    const deletionDuration = totalUnits > 0 ? duration * (deletionUnits / totalUnits) : 0;
+    const insertionDuration = duration - deletionDuration;
+    const previousChangeEnd = change.start + change.removed;
+    let startedAt: number | null = null;
+
+    setDisplayedText(previousText);
+    setTransitioning(true);
+
+    const animate = (now: number) => {
+      if (animationRun.current !== run) return;
+      if (startedAt === null) startedAt = now;
+      const elapsed = now - startedAt;
+
+      if (elapsed < deletionDuration && change.removed > 0) {
+        const removedCount = Math.min(
+          change.removed,
+          Math.floor((elapsed / deletionDuration) * change.removed),
+        );
+        setDisplayedText(
+          previousText.slice(0, change.start) +
+            previousText.slice(change.start, previousChangeEnd - removedCount) +
+            previousText.slice(previousChangeEnd),
+        );
+      } else {
+        const insertionElapsed = elapsed - deletionDuration;
+        const insertedCount = insertionDuration > 0
+          ? Math.min(change.added, Math.floor((insertionElapsed / insertionDuration) * change.added))
+          : change.added;
+        setDisplayedText(
+          nextText.slice(0, change.start) +
+            nextText.slice(change.start, change.start + insertedCount) +
+            nextText.slice(change.endNext),
+        );
+      }
+
+      if (elapsed < duration) {
+        animationFrame.current = window.requestAnimationFrame(animate);
+      } else {
+        animationFrame.current = null;
+        setDisplayedText(nextText);
+        setTransitioning(false);
+      }
+    };
+
+    animationFrame.current = window.requestAnimationFrame(animate);
+    return () => {
+      animationRun.current += 1;
+      if (animationFrame.current !== null) {
+        window.cancelAnimationFrame(animationFrame.current);
+        animationFrame.current = null;
+      }
+    };
+  }, [current, previous]);
+
+  useEffect(() => {
+    if (!playing || transitioning || list.length === 0) return;
     if (pos >= list.length - 1) {
       setPlaying(false);
       return;
     }
-    timer.current = window.setTimeout(() => setPos((p) => p + 1), BASE_STEP_MS / speed);
+
+    const realGapMs = Math.max(list[pos + 1].gap, 0) * 1000;
+    const compressedGap = Math.min(realGapMs * GAP_COMPRESSION, MAX_GAP_MS) / speed;
+    delayTimer.current = window.setTimeout(() => {
+      delayTimer.current = null;
+      automaticAdvance.current = true;
+      setPos((p) => p + 1);
+    }, compressedGap);
+
     return () => {
-      if (timer.current) window.clearTimeout(timer.current);
+      if (delayTimer.current !== null) {
+        window.clearTimeout(delayTimer.current);
+        delayTimer.current = null;
+      }
     };
-  }, [playing, pos, speed, list.length]);
+  }, [playing, transitioning, pos, speed, list]);
+
+  useEffect(() => () => {
+    animationRun.current += 1;
+    if (animationFrame.current !== null) window.cancelAnimationFrame(animationFrame.current);
+    if (delayTimer.current !== null) window.clearTimeout(delayTimer.current);
+  }, []);
 
   const jump = useCallback((i: number) => {
+    cancelTransition(list[i]?.raw.snapshot ?? "");
     setPlaying(false);
     setPos(i);
-  }, []);
+  }, [cancelTransition, list]);
 
   // Highlight only the delta versus the previously *displayed* version.
   const rendered = useMemo(() => {
     if (!current) return null;
-    const text = current.raw.snapshot ?? "";
+    const text = displayedText;
     const prevText = previous?.raw.snapshot ?? "";
     const { start, endNext } = diffRange(prevText, text);
     if (endNext <= start) return { before: text, changed: "", after: "" };
     return { before: text.slice(0, start), changed: text.slice(start, endNext), after: text.slice(endNext) };
-  }, [current, previous]);
+  }, [current, displayedText, previous]);
 
   const deltaAdded = current && previous ? diffRange(previous.raw.snapshot ?? "", current.raw.snapshot ?? "").added : current?.added ?? 0;
   const deltaRemoved = current && previous ? diffRange(previous.raw.snapshot ?? "", current.raw.snapshot ?? "").removed : current?.removed ?? 0;
