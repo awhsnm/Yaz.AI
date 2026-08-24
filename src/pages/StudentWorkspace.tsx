@@ -4,6 +4,9 @@ import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2, Trash2 } from "luc
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
+import SocraticPrompt from "@/components/SocraticPrompt";
+import ResearchConsentDialog, { CONSENT_VERSION } from "@/components/ResearchConsentDialog";
+import { useSocraticCoach } from "@/hooks/useSocraticCoach";
 import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
