@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import TopicBrief from "@/components/TopicBrief";
 
 const SUBJECTS = ["English", "Russian Literature", "Kazakh Literature", "General"];
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-topics`;
@@ -170,12 +171,18 @@ const ModeCards = () => {
 
   const soloMinutes = durationChoice === "custom" ? Math.max(5, Math.min(180, Number(customDuration) || 45)) : Number(durationChoice);
 
-  const startEssay = async (topic: string, subject: string, mode: "solo" | "brainstorm", minutes?: number) => {
+  const startEssay = async (
+    topic: string,
+    subject: string,
+    mode: "solo" | "brainstorm",
+    minutes?: number,
+    brief?: GeneratedTopic | null,
+  ) => {
     if (!user) return;
     setCreating(true);
     const { data, error } = await supabase
       .from("essays")
-      .insert({ student_id: user.id, topic: topic.trim(), subject, classroom_id: null, mode, duration_minutes: minutes ?? null })
+      .insert({ student_id: user.id, topic: topic.trim(), subject, classroom_id: null, mode, duration_minutes: minutes ?? null, topic_brief: brief ? JSON.parse(JSON.stringify(brief)) : null })
       .select()
       .single();
     setCreating(false);
@@ -387,7 +394,7 @@ const ModeCards = () => {
                 size="lg"
                 className="w-full font-display"
                 disabled={creating}
-                onClick={() => startEssay(preview.title, brainSubject, "brainstorm")}
+                onClick={() => startEssay(preview.title, brainSubject, "brainstorm", undefined, preview)}
               >
                 {creating ? t("common.loading") : t("modes.startWriting", "Start Writing Essay")}
               </Button>
