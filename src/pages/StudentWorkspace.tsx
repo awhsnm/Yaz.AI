@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2, Trash2 } from "lucide-react";
+import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2, Trash2, BookMarked } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
@@ -14,6 +14,8 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import TopicBrief, { TopicBriefData } from "@/components/TopicBrief";
 import { supabase } from "@/integrations/supabase/client";
 
 const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } as const;
@@ -44,6 +46,8 @@ const StudentWorkspace = () => {
   const [showExit, setShowExit] = useState(false);
   const [remaining, setRemaining] = useState(SESSION_DURATION);
   const [showDiscard, setShowDiscard] = useState(false);
+  const [topicBrief, setTopicBrief] = useState<TopicBriefData | null>(null);
+  const [showBrief, setShowBrief] = useState(false);
   // --- research mode (additive; false for every existing essay) ---
   const [researchMode, setResearchMode] = useState(false);
   const [consented, setConsented] = useState(true);
@@ -76,6 +80,8 @@ const StudentWorkspace = () => {
       setIsSubmitted(!!e.is_submitted);
       setSoloMode(e.classroom_id == null);
       setMode(((e as { mode?: string }).mode as "classroom" | "solo" | "brainstorm") ?? (e.classroom_id ? "classroom" : "solo"));
+      const brief = (e as { topic_brief?: unknown }).topic_brief;
+      setTopicBrief(brief && typeof brief === "object" ? (brief as TopicBriefData) : null);
       const mins = (e as { duration_minutes?: number | null }).duration_minutes;
       if (mins && mins > 0) setRemaining(mins * 60);
       // Research mode is opt-in and off for every existing essay.
@@ -275,6 +281,17 @@ const StudentWorkspace = () => {
               <p className="font-display text-sm text-foreground leading-relaxed">{topic}</p>
             </PopoverContent>
           </Popover>
+          {topicBrief && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBrief(true)}
+              className="ml-2 font-display text-xs h-7"
+            >
+              <BookMarked className="w-3 h-3 mr-1" />
+              {t("workspace.viewBrief", "View Topic Brief")}
+            </Button>
+          )}
           {isSubmitted && (
             <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 text-[10px] font-display font-semibold uppercase tracking-wide">
               {t("workspace.statusSubmitted")}
@@ -321,7 +338,7 @@ const StudentWorkspace = () => {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        <div className={`${soloMode && !researchMode ? "flex-1" : "flex-[7]"} flex justify-center overflow-y-auto p-8`}>
+        <div className={`${mode === "solo" && !researchMode ? "flex-1" : "flex-[7]"} flex justify-center overflow-y-auto p-8`}>
           <div className="w-full max-w-[800px]">
             <textarea
               value={essay}
@@ -347,7 +364,7 @@ const StudentWorkspace = () => {
               onAction={coach.recordAction}
             />
           </div>
-        ) : !soloMode ? (
+        ) : mode !== "solo" ? (
           <div className="flex-[3] min-w-[300px] max-w-[400px]">
             <AITutorSidebar
               essayId={essayId!}
@@ -371,6 +388,15 @@ const StudentWorkspace = () => {
         />
       )}
 
+
+      <Sheet open={showBrief} onOpenChange={setShowBrief}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="font-display">{t("workspace.viewBrief", "View Topic Brief")}</SheetTitle>
+          </SheetHeader>
+          {topicBrief && <TopicBrief brief={topicBrief} />}
+        </SheetContent>
+      </Sheet>
 
       <ExitModal open={showExit} onClose={() => setShowExit(false)} essayContent={essay} essayId={essayId} soloMode={soloMode} />
 
