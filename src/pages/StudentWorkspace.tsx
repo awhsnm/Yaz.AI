@@ -259,11 +259,11 @@ const StudentWorkspace = () => {
         .eq("user_id", user.id)
         .maybeSingle();
       if (p?.id) {
-        await supabase.from("research_questionnaires").insert({
+        await supabase.from("research_questionnaires").insert([{
           essay_id: essayId,
           participant_id: p.id,
-          answers,
-        });
+          answers: answers as unknown as Record<string, unknown>,
+        }]);
       }
     }
     setQuestionnaireSaving(false);
