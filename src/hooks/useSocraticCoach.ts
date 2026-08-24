@@ -26,6 +26,8 @@ const MIN_WORDS = 100;
 const MAX_QUESTIONS = 5;
 const PAUSE_MS = 8000; // typing pause after a paragraph boundary
 const COOLDOWN_MS = 90000; // minimum gap between shown questions
+const SNOOZE_MS = 180000; // "Not now" hides the card for 3 minutes
+const AFTER_SNAPSHOT_MS = 60000; // resumed-typing window for the after snapshot
 
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
