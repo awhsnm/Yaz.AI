@@ -356,12 +356,16 @@ const StudentWorkspace = () => {
           <div className="flex-[3] min-w-[300px] max-w-[400px]">
             <SocraticPrompt
               question={coach.question}
+              snoozed={coach.snoozed}
+              pendingRatingId={coach.pendingRatingId}
+              participantCode={coach.participantCode}
               paused={coach.paused}
               busy={coach.busy}
               questionsUsed={coach.questionsUsed}
               questionsMax={coach.questionsMax}
               onTogglePause={coach.togglePause}
               onAction={coach.recordAction}
+              onRate={coach.submitRating}
             />
           </div>
         ) : mode !== "solo" ? (
