@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
 import SocraticPrompt from "@/components/SocraticPrompt";
 import ResearchConsentDialog, { CONSENT_VERSION } from "@/components/ResearchConsentDialog";
+import ResearchQuestionnaire, { QuestionnaireAnswers } from "@/components/ResearchQuestionnaire";
 import { useSocraticCoach } from "@/hooks/useSocraticCoach";
 import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +53,8 @@ const StudentWorkspace = () => {
   const [researchMode, setResearchMode] = useState(false);
   const [consented, setConsented] = useState(true);
   const [consentSaving, setConsentSaving] = useState(false);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [questionnaireSaving, setQuestionnaireSaving] = useState(false);
   const lastSaved = useRef("");
   const lastLogged = useRef("");
   const pendingPaste = useRef(0);
@@ -170,9 +173,10 @@ const StudentWorkspace = () => {
     (async () => {
       await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
       setIsSubmitted(true);
+      if (researchMode) setShowQuestionnaire(true);
       toast({ title: t("workspace.timeUp"), description: t("workspace.autoSubmitted") });
     })();
-  }, [remaining, loading, isSubmitted, essay, essayId, toast, t, timed]);
+  }, [remaining, loading, isSubmitted, essay, essayId, toast, t, timed, researchMode]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
@@ -237,10 +241,36 @@ const StudentWorkspace = () => {
     await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
     await coach.notifySubmitted();
     setSaving(false);
+    setIsSubmitted(true);
+    // Research pilot only: collect the post-writing questionnaire before leaving.
+    if (researchMode) { setShowQuestionnaire(true); return; }
     // Solo Practice ends in the evaluation hub instead of the dashboard.
     if (mode === "solo") navigate(`/evaluation/${essayId}`);
     else navigate("/student-dashboard");
   };
+
+  const saveQuestionnaire = async (answers: QuestionnaireAnswers | null) => {
+    if (!essayId || !user) { navigate("/student-dashboard"); return; }
+    setQuestionnaireSaving(true);
+    if (answers) {
+      const { data: p } = await supabase
+        .from("research_participants")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (p?.id) {
+        await supabase.from("research_questionnaires").insert([{
+          essay_id: essayId,
+          participant_id: p.id,
+          answers: JSON.parse(JSON.stringify(answers)),
+        }]);
+      }
+    }
+    setQuestionnaireSaving(false);
+    setShowQuestionnaire(false);
+    navigate("/student-dashboard");
+  };
+
 
   const requestSubmit = () => {
     if (wordCount < MIN_WORDS) { setShowLowWords(true); return; }
@@ -391,6 +421,16 @@ const StudentWorkspace = () => {
           submitting={consentSaving}
           onAgree={acceptConsent}
           onDecline={() => navigate("/student-dashboard")}
+        />
+      )}
+
+      {researchMode && (
+        <ResearchQuestionnaire
+          open={showQuestionnaire}
+          submitting={questionnaireSaving}
+          participantCode={coach.participantCode}
+          onSubmit={(answers) => saveQuestionnaire(answers)}
+          onSkip={() => saveQuestionnaire(null)}
         />
       )}
 

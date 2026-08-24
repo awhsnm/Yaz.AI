@@ -12,6 +12,7 @@ import TeacherDashboard from "./pages/TeacherDashboard.tsx";
 import TeacherReview from "./pages/TeacherReview.tsx";
 import StudentFeedback from "./pages/StudentFeedback.tsx";
 import EssayEvaluation from "./pages/EssayEvaluation.tsx";
+import ResearchPilot from "./pages/ResearchPilot.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
@@ -37,6 +38,8 @@ const App = () => (
             <Route path="/review/:id" element={<ProtectedRoute role="teacher"><TeacherReview /></ProtectedRoute>} />
             <Route path="/evaluation/:id" element={<ProtectedRoute role="student"><EssayEvaluation /></ProtectedRoute>} />
             <Route path="/feedback/:id" element={<ProtectedRoute role="student"><StudentFeedback /></ProtectedRoute>} />
+            {/* Hidden, invitation-only research pilot. Intentionally unlinked from all public navigation. */}
+            <Route path="/research-pilot" element={<ProtectedRoute role="student"><ResearchPilot /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
             </Routes>
           </SettingsProvider>
