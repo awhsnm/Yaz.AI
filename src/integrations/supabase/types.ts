@@ -490,6 +490,48 @@ export type Database = {
         }
         Relationships: []
       }
+      research_questionnaires: {
+        Row: {
+          answers: Json
+          created_at: string
+          essay_id: string
+          id: string
+          participant_id: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          essay_id: string
+          id?: string
+          participant_id: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          essay_id?: string
+          id?: string
+          participant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_questionnaires_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: true
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_questionnaires_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "research_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
