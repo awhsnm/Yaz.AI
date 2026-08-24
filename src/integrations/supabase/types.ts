@@ -270,6 +270,8 @@ export type Database = {
       essays: {
         Row: {
           ai_checked_at: string | null
+          ai_evaluation: Json | null
+          ai_evaluation_at: string | null
           ai_feedback: string | null
           ai_feedback_at: string | null
           ai_probability: number | null
@@ -283,6 +285,7 @@ export type Database = {
           mode: string
           pinned: boolean
           research_mode: boolean
+          revision_count: number
           student_id: string
           subject: string
           text_stage: string
@@ -292,6 +295,8 @@ export type Database = {
         }
         Insert: {
           ai_checked_at?: string | null
+          ai_evaluation?: Json | null
+          ai_evaluation_at?: string | null
           ai_feedback?: string | null
           ai_feedback_at?: string | null
           ai_probability?: number | null
@@ -305,6 +310,7 @@ export type Database = {
           mode?: string
           pinned?: boolean
           research_mode?: boolean
+          revision_count?: number
           student_id: string
           subject?: string
           text_stage?: string
@@ -314,6 +320,8 @@ export type Database = {
         }
         Update: {
           ai_checked_at?: string | null
+          ai_evaluation?: Json | null
+          ai_evaluation_at?: string | null
           ai_feedback?: string | null
           ai_feedback_at?: string | null
           ai_probability?: number | null
@@ -327,6 +335,7 @@ export type Database = {
           mode?: string
           pinned?: boolean
           research_mode?: boolean
+          revision_count?: number
           student_id?: string
           subject?: string
           text_stage?: string
