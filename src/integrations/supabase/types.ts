@@ -117,6 +117,7 @@ export type Database = {
           coach_paused: boolean
           created_at: string
           essay_id: string
+          helpfulness_rating: number | null
           id: string
           intervention_version: string | null
           issue_category: string
@@ -143,6 +144,7 @@ export type Database = {
           coach_paused?: boolean
           created_at?: string
           essay_id: string
+          helpfulness_rating?: number | null
           id?: string
           intervention_version?: string | null
           issue_category?: string
@@ -169,6 +171,7 @@ export type Database = {
           coach_paused?: boolean
           created_at?: string
           essay_id?: string
+          helpfulness_rating?: number | null
           id?: string
           intervention_version?: string | null
           issue_category?: string
