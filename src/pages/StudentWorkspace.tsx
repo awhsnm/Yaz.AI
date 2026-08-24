@@ -4,6 +4,9 @@ import { Shield, LogOut, Clock, BookOpen, Save, CheckCircle2, Trash2 } from "luc
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
+import SocraticPrompt from "@/components/SocraticPrompt";
+import ResearchConsentDialog, { CONSENT_VERSION } from "@/components/ResearchConsentDialog";
+import { useSocraticCoach } from "@/hooks/useSocraticCoach";
 import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +44,10 @@ const StudentWorkspace = () => {
   const [showExit, setShowExit] = useState(false);
   const [remaining, setRemaining] = useState(SESSION_DURATION);
   const [showDiscard, setShowDiscard] = useState(false);
+  // --- research mode (additive; false for every existing essay) ---
+  const [researchMode, setResearchMode] = useState(false);
+  const [consented, setConsented] = useState(true);
+  const [consentSaving, setConsentSaving] = useState(false);
   const lastSaved = useRef("");
   const lastLogged = useRef("");
   const pendingPaste = useRef(0);
@@ -71,6 +78,17 @@ const StudentWorkspace = () => {
       setMode(((e as { mode?: string }).mode as "classroom" | "solo" | "brainstorm") ?? (e.classroom_id ? "classroom" : "solo"));
       const mins = (e as { duration_minutes?: number | null }).duration_minutes;
       if (mins && mins > 0) setRemaining(mins * 60);
+      // Research mode is opt-in and off for every existing essay.
+      const isResearch = !!(e as { research_mode?: boolean }).research_mode;
+      setResearchMode(isResearch);
+      if (isResearch) {
+        const { data: p } = await supabase
+          .from("research_participants")
+          .select("consented_at")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setConsented(!!p?.consented_at);
+      }
       lastSaved.current = e.content;
       const { data: m } = await supabase
         .from("messages")
@@ -171,6 +189,30 @@ const StudentWorkspace = () => {
   const isTimeUp = remaining === 0;
   const isLowTime = remaining <= 300 && remaining > 0;
 
+  // Inert unless the essay is opted into research mode.
+  const coach = useSocraticCoach({
+    essayId,
+    researchMode,
+    text: essay,
+    isSubmitted,
+    enabled: researchMode && consented && !loading,
+  });
+
+  const acceptConsent = async () => {
+    if (!user) return;
+    setConsentSaving(true);
+    const { data } = await supabase.rpc("ensure_research_participant");
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      await supabase
+        .from("research_participants")
+        .update({ consented_at: new Date().toISOString(), consent_version: CONSENT_VERSION })
+        .eq("id", (row as { id: string }).id);
+    }
+    setConsentSaving(false);
+    setConsented(true);
+  };
+
   const saveDraft = async (leave: boolean) => {
     if (!essayId) return;
     setSaving(true);
@@ -178,6 +220,7 @@ const StudentWorkspace = () => {
     lastSaved.current = essay;
     setSaving(false);
     setShowLowWords(false);
+    coach.notifySave();
     if (leave) navigate("/student-dashboard");
     else toast({ title: t("workspace.draftSaved", "Draft saved") });
   };
@@ -186,6 +229,7 @@ const StudentWorkspace = () => {
     if (!essayId) return;
     setSaving(true);
     await supabase.from("essays").update({ content: essay, is_submitted: true }).eq("id", essayId);
+    await coach.notifySubmitted();
     setSaving(false);
     navigate("/student-dashboard");
   };
@@ -277,13 +321,13 @@ const StudentWorkspace = () => {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        <div className={`${soloMode ? "flex-1" : "flex-[7]"} flex justify-center overflow-y-auto p-8`}>
+        <div className={`${soloMode && !researchMode ? "flex-1" : "flex-[7]"} flex justify-center overflow-y-auto p-8`}>
           <div className="w-full max-w-[800px]">
             <textarea
               value={essay}
               onChange={(e) => setEssay(e.target.value)}
               onPaste={handlePaste}
-              readOnly={isSubmitted}
+              readOnly={isSubmitted || (researchMode && !consented)}
               placeholder={t("workspace.begin", { topic })}
               className={`w-full h-full min-h-[calc(100vh-8rem)] resize-none bg-transparent focus-editor ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
               autoFocus
@@ -291,7 +335,19 @@ const StudentWorkspace = () => {
           </div>
         </div>
 
-        {!soloMode && (
+        {researchMode ? (
+          <div className="flex-[3] min-w-[300px] max-w-[400px]">
+            <SocraticPrompt
+              question={coach.question}
+              paused={coach.paused}
+              busy={coach.busy}
+              questionsUsed={coach.questionsUsed}
+              questionsMax={coach.questionsMax}
+              onTogglePause={coach.togglePause}
+              onAction={coach.recordAction}
+            />
+          </div>
+        ) : !soloMode ? (
           <div className="flex-[3] min-w-[300px] max-w-[400px]">
             <AITutorSidebar
               essayId={essayId!}
@@ -303,8 +359,18 @@ const StudentWorkspace = () => {
               disabled={isSubmitted}
             />
           </div>
-        )}
+        ) : null}
       </div>
+
+      {researchMode && (
+        <ResearchConsentDialog
+          open={!consented}
+          submitting={consentSaving}
+          onAgree={acceptConsent}
+          onDecline={() => navigate("/student-dashboard")}
+        />
+      )}
+
 
       <ExitModal open={showExit} onClose={() => setShowExit(false)} essayContent={essay} essayId={essayId} soloMode={soloMode} />
 

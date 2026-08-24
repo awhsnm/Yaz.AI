@@ -11,3 +11,7 @@ verify_jwt = false
 
 [functions.extract-image-text]
 verify_jwt = false
+
+[functions.socratic-coach]
+verify_jwt = false
+
