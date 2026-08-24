@@ -78,6 +78,17 @@ const StudentWorkspace = () => {
       setMode(((e as { mode?: string }).mode as "classroom" | "solo" | "brainstorm") ?? (e.classroom_id ? "classroom" : "solo"));
       const mins = (e as { duration_minutes?: number | null }).duration_minutes;
       if (mins && mins > 0) setRemaining(mins * 60);
+      // Research mode is opt-in and off for every existing essay.
+      const isResearch = !!(e as { research_mode?: boolean }).research_mode;
+      setResearchMode(isResearch);
+      if (isResearch) {
+        const { data: p } = await supabase
+          .from("research_participants")
+          .select("consented_at")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setConsented(!!p?.consented_at);
+      }
       lastSaved.current = e.content;
       const { data: m } = await supabase
         .from("messages")
