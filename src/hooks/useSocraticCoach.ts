@@ -61,10 +61,21 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   const participantId = useRef<string | null>(null);
   const analysing = useRef(false);
   const pendingAfterFor = useRef<string | null>(null);
+  const snoozeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const afterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   textRef.current = text;
   stageRef.current = stage;
   pausedRef.current = paused;
+
+  // Clean up pending timers on unmount.
+  useEffect(
+    () => () => {
+      if (snoozeTimer.current) clearTimeout(snoozeTimer.current);
+      if (afterTimer.current) clearTimeout(afterTimer.current);
+    },
+    [],
+  );
 
   /** Ensure the pseudonymous participant record exists (P01, P02, …). */
   const ensureParticipant = useCallback(async () => {
@@ -73,8 +84,11 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
     if (error || !data) return null;
     const row = Array.isArray(data) ? data[0] : data;
     participantId.current = (row as { id: string }).id;
+    const code = (row as { participant_code?: string }).participant_code;
+    if (code) setParticipantCode(code);
     return participantId.current;
   }, []);
+
 
   // Load current budget for this essay.
   useEffect(() => {
