@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { buildOpeningQuestion } from "@/lib/tutor-tone";
+
 
 interface Message {
   id: string;
@@ -34,8 +36,9 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
   const welcomeMsg: Message = {
     id: "welcome",
     role: "assistant",
-    content: `Welcome! I'm your AI writing tutor. 💡\n\nYour essay topic: **"${topic}"**${subject ? ` (${subject})` : ""}\n\nI'll guide your thinking and help you build stronger arguments — but I won't write your essay for you.\n\nHow would you like to start? You can ask me about:\n• How to **begin** your essay\n• How to **structure** your argument\n• How to **strengthen** a specific paragraph`,
+    content: buildOpeningQuestion(topic, subject),
   };
+
 
   const [messages, setMessages] = useState<Message[]>(
     restoredChatHistory && restoredChatHistory.length > 0 ? restoredChatHistory : [welcomeMsg]
