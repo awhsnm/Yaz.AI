@@ -262,7 +262,7 @@ const StudentWorkspace = () => {
         await supabase.from("research_questionnaires").insert([{
           essay_id: essayId,
           participant_id: p.id,
-          answers: answers as unknown as Record<string, unknown>,
+          answers: JSON.parse(JSON.stringify(answers)),
         }]);
       }
     }
