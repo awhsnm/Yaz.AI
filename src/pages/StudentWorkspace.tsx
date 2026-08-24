@@ -424,6 +424,16 @@ const StudentWorkspace = () => {
         />
       )}
 
+      {researchMode && (
+        <ResearchQuestionnaire
+          open={showQuestionnaire}
+          submitting={questionnaireSaving}
+          participantCode={coach.participantCode}
+          onSubmit={(answers) => saveQuestionnaire(answers)}
+          onSkip={() => saveQuestionnaire(null)}
+        />
+      )}
+
 
       <Sheet open={showBrief} onOpenChange={setShowBrief}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
