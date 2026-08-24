@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import AITutorSidebar from "@/components/AITutorSidebar";
 import SocraticPrompt from "@/components/SocraticPrompt";
 import ResearchConsentDialog, { CONSENT_VERSION } from "@/components/ResearchConsentDialog";
+import ResearchQuestionnaire, { QuestionnaireAnswers } from "@/components/ResearchQuestionnaire";
 import { useSocraticCoach } from "@/hooks/useSocraticCoach";
 import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +53,8 @@ const StudentWorkspace = () => {
   const [researchMode, setResearchMode] = useState(false);
   const [consented, setConsented] = useState(true);
   const [consentSaving, setConsentSaving] = useState(false);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [questionnaireSaving, setQuestionnaireSaving] = useState(false);
   const lastSaved = useRef("");
   const lastLogged = useRef("");
   const pendingPaste = useRef(0);
