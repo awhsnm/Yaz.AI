@@ -13,6 +13,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
+const safeNext = (value: string | null): string | null => {
+  if (!value) return null;
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  return value;
+};
+
 const Auth = () => {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
@@ -27,11 +33,17 @@ const Auth = () => {
   const [signupRole, setSignupRole] = useState<"student" | "teacher" | null>(null);
   const [schoolOpen, setSchoolOpen] = useState(false);
 
+  const nextPath = safeNext(new URLSearchParams(window.location.search).get("next"));
+
   useEffect(() => {
     if (!loading && user && role) {
+      if (nextPath) {
+        window.location.replace(nextPath);
+        return;
+      }
       navigate(role === "teacher" ? "/teacher-dashboard" : "/student-dashboard", { replace: true });
     }
-  }, [user, role, loading, navigate]);
+  }, [user, role, loading, navigate, nextPath]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +60,7 @@ const Auth = () => {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}${nextPath ?? "/"}`,
         data: { full_name: fullName },
       },
     });
@@ -59,6 +71,7 @@ const Auth = () => {
       toast({ title: t("auth.accountCreated"), description: t("auth.accountCreatedDesc") });
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
