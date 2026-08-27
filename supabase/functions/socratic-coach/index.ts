@@ -79,8 +79,10 @@ Do not give the answer inside the question.
 Do not ask more than one question.
 
 
-QUESTION FORM
-One sentence. Under 25 words. Ends with a question mark.
+QUESTION FORM (ABSOLUTE)
+Output EXACTLY ONE sentence: a single question, strictly under 25 words, ending with one question mark.
+No second question, no explanation, no preamble, no bullets, no lecturing.
+Use clear, natural language a high school student understands; avoid technical or academic jargon unless the student used it first.
 Open-ended (starts with What / How / Why / Which / In what way / Where).
 Grounded in the student's actual wording — you may quote at most 6 of their words.
 
@@ -110,9 +112,11 @@ export function sanitiseQuestion(q: unknown, draft: string): string | null {
   if (/```|^[-*•>]|\d\.\s/.test(question)) return null;
   if (!question.endsWith("?")) return null;
   if ((question.match(/\?/g) ?? []).length !== 1) return null;
-  if (question.length > 200) return null;
+  if (question.length > 180) return null;
+  // Single sentence only: no statement may precede or follow the question.
+  if (/[.!]\s/.test(question)) return null;
   const w = words(question);
-  if (w.length > 30) return null;
+  if (w.length > 25) return null;
 
   const lower = question.toLowerCase();
   if (!OPENERS.some((o) => lower.startsWith(o))) return null;
