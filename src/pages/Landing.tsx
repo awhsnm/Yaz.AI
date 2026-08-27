@@ -29,7 +29,7 @@ const Landing = () => {
       <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-30">
         <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-3">
           <div className="flex items-center gap-2 font-display font-bold text-foreground">
-            <GraduationCap className="w-5 h-5 text-primary" />Oilan AI
+            <GraduationCap className="w-5 h-5 text-primary" />Yaz AI
           </div>
           <div className="ml-auto flex items-center gap-2">
             <a href="#modes" className="hidden sm:inline text-sm font-display text-muted-foreground hover:text-foreground px-2">{t("landing.nav.modes")}</a>
@@ -205,7 +205,7 @@ const Landing = () => {
         <div className="max-w-6xl mx-auto px-6 py-12 grid md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center gap-2 font-display font-bold text-foreground">
-              <GraduationCap className="w-5 h-5 text-primary" />Oilan AI
+              <GraduationCap className="w-5 h-5 text-primary" />Yaz AI
             </div>
             <p className="mt-3 text-sm font-display text-muted-foreground">
               {t("landing.footer.tagline")}
@@ -231,7 +231,7 @@ const Landing = () => {
           </div>
         </div>
         <div className="border-t border-border py-4 text-center text-xs font-display text-muted-foreground">
-          © {new Date().getFullYear()} Oilan AI
+          © {new Date().getFullYear()} Yaz AI
         </div>
       </footer>
       <SchoolAccessModal open={schoolOpen} onOpenChange={setSchoolOpen} />

@@ -11,9 +11,9 @@
   },
   "mcp": {
     "server": {
-      "name": "oilan-ai",
+      "name": "yaz-ai",
       "version": "0.1.0",
-      "title": "Oilan AI"
+      "title": "Yaz AI"
     },
     "tools": [
       {
