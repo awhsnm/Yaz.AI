@@ -102,6 +102,18 @@ const StudentDashboard = () => {
     if (h < 18) return t("greet.day");
     return t("greet.evening");
   };
+
+  const headerGradient = () => {
+    const h = new Date().getHours();
+    if (h >= 6 && h < 12) {
+      return "bg-gradient-to-r from-amber-100/60 via-rose-50/40 to-background";
+    }
+    if (h >= 12 && h < 18) {
+      return "bg-gradient-to-r from-sky-100/60 via-blue-50/40 to-background";
+    }
+    return "bg-gradient-to-r from-slate-300/40 via-indigo-100/30 to-background dark:from-slate-800/40 dark:via-indigo-950/30";
+  };
+
   const displayName = fullName || user?.email?.split("@")[0] || "";
 
   return (
