@@ -17,6 +17,7 @@ Rules:
 - NO academic jargon, no "discourse", "paradigm", "socio-cultural", no research-paper phrasing.
 - Topics must still be deep and thought-provoking, but instantly understandable at first read.
 - Each option must have a specific, arguable title (not vague).
+- Each option must include "subtitle": ONE engaging 1-sentence hook or subtitle of 15-20 words that previews the angle without revealing the full argument or giving a summary. It should make the student curious to click.
 - Each option must include "focus": a DEEP core thesis argument of AT LEAST 8 full sentences (minimum 160 words, ideally 200-280), still in plain B1-B2 English. Never fewer than 8 sentences. It must do all of these, in order:
   (1) state the main arguable claim clearly and take a definite stance (not "both sides have points");
   (2) name the key nuance, condition or tension that makes the claim non-obvious (e.g. "this is true mainly when...", "the real problem is not X but Y");
@@ -33,7 +34,7 @@ Rules:
 - Each option must include "facts": 3-4 short, concrete, verifiable bullet facts (max 20 words each) about the topic.
 - Each option must include "guiding_question": ONE thought-provoking question (under 30 words) that helps the student start their first paragraph.
 - Keep titles under 12 words.
-- Return ONLY valid JSON matching this exact shape: {"topics":[{"title":"...","focus":"...","background":"...","angles":[{"label":"...","detail":"..."}],"vocabulary":[{"term":"...","definition":"..."}],"facts":["...","...","..."],"guiding_question":"..."}]} with exactly 3 topics.
+- Return ONLY valid JSON matching this exact shape: {"topics":[{"title":"...","subtitle":"...","focus":"...","background":"...","angles":[{"label":"...","detail":"..."}],"vocabulary":[{"term":"...","definition":"..."}],"facts":["...","...","..."],"guiding_question":"..."}]} with exactly 3 topics.
 - No prose, no markdown, no code fences.`;
 
 serve(async (req) => {
