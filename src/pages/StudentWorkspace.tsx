@@ -296,6 +296,8 @@ const StudentWorkspace = () => {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-display">{t("workspace.loadingSession")}</div>;
 
+  const modeAccent = MODE_ACCENT[mode] || null;
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <div className="h-11 border-b border-border flex items-center justify-between px-4 bg-card shrink-0">
