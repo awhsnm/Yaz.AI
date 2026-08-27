@@ -36,6 +36,10 @@ const Auth = () => {
   const nextPath = safeNext(new URLSearchParams(window.location.search).get("next"));
 
   useEffect(() => {
+    if (!loading && user && !user.email_confirmed_at) {
+      navigate("/verify-email", { replace: true });
+      return;
+    }
     if (!loading && user && role) {
       if (nextPath) {
         window.location.replace(nextPath);
@@ -48,19 +52,32 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) toast({ title: t("auth.loginFailed"), description: error.message, variant: "destructive" });
+    if (error) {
+      if (/confirm/i.test(error.message)) {
+        sessionStorage.setItem("pendingVerifyEmail", email);
+        navigate("/verify-email", { replace: true });
+        return;
+      }
+      toast({ title: t("auth.loginFailed"), description: error.message, variant: "destructive" });
+      return;
+    }
+    if (data.user && !data.user.email_confirmed_at) {
+      sessionStorage.setItem("pendingVerifyEmail", email);
+      await supabase.auth.signOut();
+      navigate("/verify-email", { replace: true });
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}${nextPath ?? "/"}`,
+        emailRedirectTo: `${window.location.origin}/verify-email`,
         data: { full_name: fullName },
       },
     });
@@ -68,7 +85,10 @@ const Auth = () => {
     if (error) {
       toast({ title: t("auth.signupFailed"), description: error.message, variant: "destructive" });
     } else {
-      toast({ title: t("auth.accountCreated"), description: t("auth.accountCreatedDesc") });
+      // Never auto-login: the account is inactive until the email is confirmed.
+      sessionStorage.setItem("pendingVerifyEmail", email);
+      if (data.session && !data.user?.email_confirmed_at) await supabase.auth.signOut();
+      navigate("/verify-email", { replace: true });
     }
   };
 
