@@ -67,3 +67,37 @@ export function buildOpeningQuestion(topic: string, _subject?: string): string {
     .replace(/[.?!]+$/, "");
   return `What specific claim will your essay make about ${cleaned || "this topic"}?`;
 }
+
+/** Maximum words allowed in a coach question. */
+export const MAX_QUESTION_WORDS = 25;
+
+/**
+ * Enforce the "single concise question" contract on any coach/tutor output.
+ * Returns the trimmed single question, or null when nothing usable remains.
+ */
+export function enforceSingleQuestion(raw: string): string | null {
+  if (!raw) return null;
+  // Strip markdown decoration, list markers and line breaks.
+  let text = raw
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/[*_`>#]/g, "")
+    .replace(/^\s*[-•\d.]+\s*/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return null;
+
+  // Keep only the first question sentence.
+  const firstMark = text.indexOf("?");
+  if (firstMark === -1) return null;
+  text = text.slice(0, firstMark + 1);
+
+  // Drop any leading statements before the question itself.
+  const parts = text.split(/(?<=[.!])\s+/);
+  text = parts[parts.length - 1].trim();
+  text = text.replace(/^["'“”]+|["'“”]+$/g, "").trim();
+  if (!text.endsWith("?")) return null;
+
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0 || words.length > MAX_QUESTION_WORDS) return null;
+  return text;
+}
