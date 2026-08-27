@@ -240,7 +240,7 @@ const en = {
       classroomP2: "Live teacher feed",
       classroomP3: "AI coaching guardrails",
       soloLabel: "Solo Exam Practice",
-      soloBody: "Timed SAT/IELTS-style simulations with strict exam rules: no AI assistant, no draft saving, custom countdown. On submission students get an instant AI breakdown of strengths, weaknesses, and next steps.",
+      soloBody: "An independent writing mode in a simulated exam environment: complete focus with zero AI assistance during drafting, a customizable timer, and strict rules with no draft saving. After submitting your essay, you can request a detailed diagnostic score along with a breakdown of strengths and weaknesses with a single click.\n",
       soloP1: "Custom timer (20/45/60 min)",
       soloP2: "No AI during the exam",
       soloP3: "Instant post-submission feedback",
