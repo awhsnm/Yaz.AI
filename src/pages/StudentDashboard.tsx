@@ -119,7 +119,7 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <BirthdayOverlay />
-      <div className="border-b border-border bg-card">
+      <div className={`border-b border-border ${headerGradient()}`}>
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
