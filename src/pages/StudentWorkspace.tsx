@@ -24,6 +24,12 @@ const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } 
 const SESSION_DURATION = 45 * 60;
 const MIN_WORDS = 20;
 
+const MODE_ACCENT: Record<string, { border: string; bgLight: string; bgDark: string; text: string } | null> = {
+  brainstorm: { border: "#10B981", bgLight: "#E6F4EA", bgDark: "#052e16", text: "#10B981" },
+  classroom: { border: "#2563EB", bgLight: "#EFF6FF", bgDark: "#172554", text: "#2563EB" },
+  solo: null,
+};
+
 interface Msg { id: string; role: "user" | "assistant"; content: string; }
 
 const StudentWorkspace = () => {
