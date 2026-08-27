@@ -504,7 +504,9 @@ const ModeCards = () => {
                           <h4 className="font-display font-semibold text-foreground text-sm mb-1">
                             {topic.title}
                           </h4>
-                          <p className="text-xs text-muted-foreground font-display">{topic.focus}</p>
+                          <p className="text-xs text-muted-foreground font-display line-clamp-2">
+                            {topic.subtitle || topic.focus}
+                          </p>
                         </div>
                         <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0 mt-0.5" />
                       </div>
