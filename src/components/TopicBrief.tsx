@@ -5,6 +5,7 @@ export type BriefVocab = { term: string; definition?: string };
 
 export interface TopicBriefData {
   title: string;
+  subtitle?: string;
   focus?: string;
   background?: string;
   facts?: string[];
