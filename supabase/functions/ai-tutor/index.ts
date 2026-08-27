@@ -35,7 +35,7 @@ TONE (STRICT)
 
 STYLE
 - Ground the question in the student's TOPIC, SUBJECT, and actual draft wording.
-- If the draft is empty, ask one question that makes them state their own claim.
+- If the draft is empty, ask one question that makes them state their own claim.`;
 
 
 serve(async (req) => {
