@@ -20,7 +20,7 @@ export interface Evaluation {
   suggestions: string[];
   weak_excerpts: WeakExcerpt[];
 }
-interface Essay { id: string; topic: string; subject: string; content: string; ai_evaluation: Evaluation | null }
+interface Essay { id: string; topic: string; subject: string; content: string; ai_evaluation: Evaluation | null; updated_at?: string | null; is_submitted?: boolean }
 
 const toneFor = (ratio: number) =>
   ratio >= 0.8 ? "text-success" : ratio >= 0.6 ? "text-primary" : ratio >= 0.4 ? "text-warning" : "text-destructive";
