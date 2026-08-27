@@ -35,6 +35,7 @@ type Angle = { label: string; detail: string };
 type Vocab = { term: string; definition: string };
 type GeneratedTopic = {
   title: string;
+  subtitle?: string;
   focus: string;
   background?: string;
   facts?: string[];
