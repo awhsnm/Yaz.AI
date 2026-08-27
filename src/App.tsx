@@ -13,6 +13,7 @@ import TeacherReview from "./pages/TeacherReview.tsx";
 import StudentFeedback from "./pages/StudentFeedback.tsx";
 import EssayEvaluation from "./pages/EssayEvaluation.tsx";
 import ResearchPilot from "./pages/ResearchPilot.tsx";
+import OAuthConsent from "./pages/OAuthConsent.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
@@ -31,6 +32,7 @@ const App = () => (
             <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/student-dashboard" element={<ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>} />
             <Route path="/join" element={<ProtectedRoute role="student"><JoinLesson /></ProtectedRoute>} />
             <Route path="/essay/:id" element={<ProtectedRoute role="student"><StudentWorkspace /></ProtectedRoute>} />

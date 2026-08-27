@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "sdk_version": "0.28.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://xwbwvdvyetitdudjctum.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "focuswrite-ai",
+      "version": "0.1.0",
+      "title": "FocusWrite AI"
+    },
+    "tools": [
+      {
+        "name": "list_essays",
+        "title": "List essays",
+        "description": "List the signed-in student's essays with topic, subject, mode, word count, and submission status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "classroom",
+                "solo",
+                "brainstorm"
+              ],
+              "description": "Optional filter by writing mode."
+            },
+            "submitted": {
+              "type": "boolean",
+              "description": "Optional filter by submission status."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of essays to return (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_essay",
+        "title": "Get essay",
+        "description": "Read one of the signed-in student's essays: full text, topic, subject, mode, status, and AI evaluation when available.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "essay_id": {
+              "type": "string",
+              "description": "The essay id returned by list_essays."
+            }
+          },
+          "required": [
+            "essay_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_essay",
+        "title": "Create practice essay",
+        "description": "Create a new personal practice essay (solo or brainstorm mode) for the signed-in student. Classroom essays must be started in the app with a lesson code.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "topic": {
+              "type": "string",
+              "description": "Essay topic or prompt."
+            },
+            "subject": {
+              "type": "string",
+              "description": "Subject: English, Russian Literature, Kazakh Literature, or General."
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "solo",
+                "brainstorm"
+              ],
+              "description": "Writing mode; defaults to solo practice."
+            },
+            "duration_minutes": {
+              "type": "integer",
+              "description": "Timer length for solo practice in minutes (default 45)."
+            }
+          },
+          "required": [
+            "topic",
+            "subject"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "save_draft",
+        "title": "Save essay draft",
+        "description": "Replace the text of one of the signed-in student's own unsubmitted personal practice essays (solo or brainstorm). Classroom and submitted essays cannot be edited here.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "essay_id": {
+              "type": "string",
+              "description": "The essay id returned by list_essays."
+            },
+            "content": {
+              "type": "string",
+              "description": "Full replacement draft text."
+            }
+          },
+          "required": [
+            "essay_id",
+            "content"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
