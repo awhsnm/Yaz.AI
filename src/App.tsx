@@ -32,6 +32,7 @@ const App = () => (
             <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/student-dashboard" element={<ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>} />
             <Route path="/join" element={<ProtectedRoute role="student"><JoinLesson /></ProtectedRoute>} />
             <Route path="/essay/:id" element={<ProtectedRoute role="student"><StudentWorkspace /></ProtectedRoute>} />
