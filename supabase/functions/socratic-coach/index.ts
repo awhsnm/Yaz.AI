@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { enforceRateLimit, sanitizeUserText } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -172,6 +173,9 @@ serve(async (req) => {
     const user = userData?.user;
     if (!user) return json({ error: "Unauthorized" }, 401);
 
+    const limited = await enforceRateLimit(user.id, "socratic-coach");
+    if (limited) return limited;
+
     const body = await req.json();
     const essayId: string = body?.essay_id;
     const triggerEvent: string = body?.trigger_event;
@@ -199,7 +203,7 @@ serve(async (req) => {
     if (pErr || !participant) return json({ error: "Participant record unavailable" }, 500);
     const participantId = (Array.isArray(participant) ? participant[0] : participant).id;
 
-    const draft: string = essay.content ?? "";
+    const draft: string = sanitizeUserText(essay.content ?? "");
     const wordCount = words(draft).length;
 
     const logSuppressed = async (reason: string, category = "none") => {
@@ -253,8 +257,8 @@ serve(async (req) => {
     const usedParagraphs = shown.map((r) => r.paragraph_index);
 
     const userContent = [
-      `TOPIC: ${essay.topic || "(none)"}`,
-      `SUBJECT: ${essay.subject || "(none)"}`,
+      `TOPIC: ${sanitizeUserText(essay.topic, 300) || "(none)"}`,
+      `SUBJECT: ${sanitizeUserText(essay.subject, 120) || "(none)"}`,
       `TEXT STAGE: ${textStage}`,
       `WORD COUNT: ${wordCount}`,
       `TRIGGER: ${triggerEvent}`,

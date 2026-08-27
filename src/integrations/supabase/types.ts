@@ -58,6 +58,27 @@ export type Database = {
           },
         ]
       }
+      api_rate_limits: {
+        Row: {
+          called_at: string
+          fn: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          called_at?: string
+          fn: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          called_at?: string
+          fn?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bug_reports: {
         Row: {
           created_at: string

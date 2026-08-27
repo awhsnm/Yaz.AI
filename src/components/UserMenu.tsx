@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Settings as SettingsIcon, User, Sliders, LifeBuoy, Sun, Moon, LogOut } from "lucide-react";
+import { Settings as SettingsIcon, User, Sliders, LifeBuoy, Sun, Moon, LogOut, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,6 +93,9 @@ export const UserMenu = () => {
                 <Input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
               </div>
               <Button onClick={saveAccount} disabled={busy} className="w-full">{t("settings.saveChanges")}</Button>
+              <Link to="/settings/security" onClick={() => setOpen(false)} className="flex items-center justify-center gap-2 w-full border border-border rounded-md px-3 py-2 text-sm font-display hover:bg-accent transition-colors">
+                <ShieldCheck className="w-4 h-4" /> Security & privacy
+              </Link>
             </TabsContent>
 
             <TabsContent value="core" className="space-y-4 pt-3">

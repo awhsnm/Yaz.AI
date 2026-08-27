@@ -7,6 +7,7 @@ const ProtectedRoute = ({ role, children }: { role?: "teacher" | "student"; chil
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-display">Loading...</div>;
   }
   if (!user) return <Navigate to="/auth" replace />;
+  if (!user.email_confirmed_at) return <Navigate to="/verify-email" replace />;
   if (role && userRole && userRole !== role) {
     return <Navigate to={userRole === "teacher" ? "/teacher-dashboard" : "/student-dashboard"} replace />;
   }
