@@ -76,7 +76,7 @@ const OAuthConsent = () => {
           <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-display font-semibold text-foreground">Yaz AI</span>
+          <span className="font-display font-semibold text-foreground">Yaz.AI</span>
         </div>
 
         {error ? (
@@ -90,7 +90,7 @@ const OAuthConsent = () => {
             </h1>
             <p className="text-sm text-muted-foreground mb-6">
               This lets {details.client?.name ?? "the client"} read and create your own practice essays in
-              Yaz AI, acting as you. Classroom essays stay read-only.
+              Yaz.AI, acting as you. Classroom essays stay read-only.
             </p>
             <div className="flex items-start gap-2 text-xs text-muted-foreground mb-6">
               <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
