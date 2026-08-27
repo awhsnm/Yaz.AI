@@ -20,7 +20,7 @@ export interface Evaluation {
   suggestions: string[];
   weak_excerpts: WeakExcerpt[];
 }
-interface Essay { id: string; topic: string; subject: string; content: string; ai_evaluation: Evaluation | null }
+interface Essay { id: string; topic: string; subject: string; content: string; ai_evaluation: Evaluation | null; updated_at?: string | null; is_submitted?: boolean }
 
 const toneFor = (ratio: number) =>
   ratio >= 0.8 ? "text-success" : ratio >= 0.6 ? "text-primary" : ratio >= 0.4 ? "text-warning" : "text-destructive";
@@ -39,14 +39,13 @@ const EssayEvaluation = () => {
   const [revising, setRevising] = useState(false);
   const [saving, setSaving] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
-  const started = useRef(false);
 
   useEffect(() => {
     if (!id) return;
     (async () => {
       const { data } = await supabase
         .from("essays")
-        .select("id, topic, subject, content, ai_evaluation")
+        .select("id, topic, subject, content, ai_evaluation, updated_at, is_submitted")
         .eq("id", id)
         .maybeSingle();
       if (!data) { navigate("/student-dashboard", { replace: true }); return; }
@@ -59,6 +58,9 @@ const EssayEvaluation = () => {
   }, [id, navigate]);
 
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+  const submittedAt = essay?.updated_at
+    ? new Date(essay.updated_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : "—";
 
   const runEvaluation = async (text: string) => {
     if (!essay) return;
@@ -91,13 +93,9 @@ const EssayEvaluation = () => {
     }
   };
 
-  // Evaluate automatically on first arrival.
-  useEffect(() => {
-    if (loading || !essay || started.current) return;
-    started.current = true;
-    if (!evaluation && wordCount >= 20) runEvaluation(essay.content);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, essay]);
+  // No automatic evaluation: the AI call runs only when the student requests it.
+
+
 
   const saveAndReevaluate = async () => {
     if (!essay) return;
@@ -161,20 +159,46 @@ const EssayEvaluation = () => {
 
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
         {!evaluation ? (
-          <div className="bg-card border border-border rounded-lg p-8 text-center space-y-4">
+          <div className="bg-card border border-border rounded-lg p-8 text-center space-y-5">
             {running ? (
               <>
                 <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
-                <p className="font-display text-sm text-muted-foreground">Assessing your essay against the 4-pillar rubric…</p>
+                <p className="font-display text-sm text-muted-foreground">
+                  Analyzing essay structure, argumentation, and grammar…
+                </p>
               </>
             ) : (
               <>
-                <p className="font-display text-sm text-muted-foreground">
-                  {wordCount < 20 ? "Write at least 20 words to be evaluated." : "No evaluation yet."}
-                </p>
-                <Button className="font-display" disabled={wordCount < 20} onClick={() => runEvaluation(content)}>
-                  <Sparkles className="w-4 h-4 mr-2" />Evaluate Essay
-                </Button>
+                <CheckCircle2 className="w-8 h-8 text-success mx-auto" />
+                <div className="space-y-1">
+                  <h2 className="font-display font-semibold text-lg text-foreground">Essay submitted</h2>
+                  <p className="font-display text-sm text-muted-foreground">
+                    Your draft is finalized and locked. AI feedback is optional and runs only when you ask for it.
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-6 text-sm font-display">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Submitted</p>
+                    <p className="text-foreground font-medium">{submittedAt}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Word count</p>
+                    <p className="text-foreground font-medium">{wordCount} words</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2 pt-1">
+                  <Button className="font-display" disabled={wordCount < 20} onClick={() => runEvaluation(content)}>
+                    <Sparkles className="w-4 h-4 mr-2" />Request AI Diagnostic &amp; Feedback
+                  </Button>
+                  <Button variant="outline" className="font-display" onClick={() => navigate("/student-dashboard")}>
+                    Return to Dashboard
+                  </Button>
+                </div>
+                {wordCount < 20 && (
+                  <p className="font-display text-xs text-muted-foreground">
+                    At least 20 words are needed for an AI diagnostic.
+                  </p>
+                )}
               </>
             )}
           </div>
