@@ -300,9 +300,15 @@ const StudentWorkspace = () => {
     <div className="h-screen flex flex-col bg-background">
       <div className="h-11 border-b border-border flex items-center justify-between px-4 bg-card shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <Shield className="w-4 h-4 text-success" />
-            <span className="text-xs font-display font-medium text-success">{t("workspace.focusMode")}</span>
+          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-display font-medium ${
+            mode === "brainstorm"
+              ? "bg-[#E6F4EA] text-[#10B981] dark:bg-[#052e16]"
+              : mode === "classroom"
+              ? "bg-[#EFF6FF] text-[#2563EB] dark:bg-[#172554]"
+              : "bg-success/10 text-success"
+          }`}>
+            <Shield className="w-3.5 h-3.5" />
+            {t("workspace.focusMode")}
           </div>
           <span className="text-xs text-muted-foreground font-display">|</span>
           <Popover>
