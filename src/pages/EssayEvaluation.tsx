@@ -90,13 +90,9 @@ const EssayEvaluation = () => {
     }
   };
 
-  // Evaluate automatically on first arrival.
-  useEffect(() => {
-    if (loading || !essay || started.current) return;
-    started.current = true;
-    if (!evaluation && wordCount >= 20) runEvaluation(essay.content);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, essay]);
+  // No automatic evaluation: the AI call runs only when the student requests it.
+
+
 
   const saveAndReevaluate = async () => {
     if (!essay) return;
