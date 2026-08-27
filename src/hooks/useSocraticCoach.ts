@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { enforceSingleQuestion } from "@/lib/tutor-tone";
 
 /**
  * Proactive Socratic coach — RESEARCH MODE ONLY.
@@ -165,12 +166,15 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
           },
         });
         if (error || !data?.intervene) return;
+        // Client-side guard: never render more than one concise question.
+        const safeQuestion = enforceSingleQuestion(String(data.question ?? ""));
+        if (!safeQuestion) return;
         usedRef.current = data.questions_used ?? usedRef.current + 1;
         setQuestionsUsed(usedRef.current);
         lastShownAt.current = Date.now();
         setQuestion({
           interventionId: data.intervention_id,
-          question: data.question,
+          question: safeQuestion,
           paragraphIndex: data.paragraph_index ?? 0,
         });
       } catch (e) {
