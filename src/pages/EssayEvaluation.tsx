@@ -58,6 +58,9 @@ const EssayEvaluation = () => {
   }, [id, navigate]);
 
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+  const submittedAt = essay?.updated_at
+    ? new Date(essay.updated_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : "—";
 
   const runEvaluation = async (text: string) => {
     if (!essay) return;
