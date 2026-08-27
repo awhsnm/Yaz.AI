@@ -11,9 +11,9 @@
   },
   "mcp": {
     "server": {
-      "name": "focuswrite-ai",
+      "name": "oilan-ai",
       "version": "0.1.0",
-      "title": "FocusWrite AI"
+      "title": "Oilan AI"
     },
     "tools": [
       {
