@@ -13,6 +13,7 @@ import TeacherReview from "./pages/TeacherReview.tsx";
 import StudentFeedback from "./pages/StudentFeedback.tsx";
 import EssayEvaluation from "./pages/EssayEvaluation.tsx";
 import ResearchPilot from "./pages/ResearchPilot.tsx";
+import OAuthConsent from "./pages/OAuthConsent.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
