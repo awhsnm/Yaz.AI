@@ -383,16 +383,20 @@ const StudentWorkspace = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 bg-[#FAFAF9] dark:bg-[#0a0a0a]">
         <div className={`${mode === "solo" && !researchMode ? "flex-1" : "flex-[7]"} flex justify-center overflow-y-auto p-8`}>
-          <div className="w-full max-w-[800px]">
+          <div className={`w-full max-w-[800px] rounded-lg border-2 p-6 transition-colors ${
+            modeAccent
+              ? `bg-[${modeAccent.bgLight}] dark:bg-[${modeAccent.bgDark}] border-[${modeAccent.border}]`
+              : "bg-background border-transparent"
+          }`}>
             <textarea
               value={essay}
               onChange={(e) => setEssay(e.target.value)}
               onPaste={handlePaste}
               readOnly={isSubmitted || (researchMode && !consented)}
               placeholder={t("workspace.begin", { topic })}
-              className={`w-full h-full min-h-[calc(100vh-8rem)] resize-none bg-transparent focus-editor ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
+              className={`w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent focus-editor ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
               autoFocus
             />
           </div>
