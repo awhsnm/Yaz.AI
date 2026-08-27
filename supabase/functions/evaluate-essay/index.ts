@@ -1,9 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, enforceRateLimit, requireUser, sanitizeUserText } from "../_shared/security.ts";
 
 const SYSTEM_PROMPT = `You are an academic essay examiner assessing a high school student's essay (English B1-B2 level).
 Grade strictly and fairly against a 100-point, 4-pillar rubric. Each criterion is scored 0-25.
@@ -71,7 +67,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { topic, subject, content } = await req.json();
+    const auth = await requireUser(req);
+    if ("error" in auth) return auth.error;
+    const limited = await enforceRateLimit(auth.user.id, "evaluate-essay");
+    if (limited) return limited;
+
+    const rawBody = await req.json();
+    const topic = sanitizeUserText(rawBody?.topic, 300);
+    const subject = sanitizeUserText(rawBody?.subject, 120);
+    const content = sanitizeUserText(rawBody?.content);
     if (!content || typeof content !== "string" || content.trim().split(/\s+/).filter(Boolean).length < 20) {
       return new Response(JSON.stringify({ error: "Essay is too short to evaluate." }), {
         status: 400,
