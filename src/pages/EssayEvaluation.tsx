@@ -39,14 +39,13 @@ const EssayEvaluation = () => {
   const [revising, setRevising] = useState(false);
   const [saving, setSaving] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
-  const started = useRef(false);
 
   useEffect(() => {
     if (!id) return;
     (async () => {
       const { data } = await supabase
         .from("essays")
-        .select("id, topic, subject, content, ai_evaluation")
+        .select("id, topic, subject, content, ai_evaluation, updated_at, is_submitted")
         .eq("id", id)
         .maybeSingle();
       if (!data) { navigate("/student-dashboard", { replace: true }); return; }
