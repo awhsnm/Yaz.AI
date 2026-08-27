@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
-import { buildOpeningQuestion } from "@/lib/tutor-tone";
+import { buildOpeningQuestion, enforceSingleQuestion } from "@/lib/tutor-tone";
 
 
 interface Message {
@@ -136,10 +136,13 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
         }
       }
 
+      // Enforce the single-question contract before the message is finalised.
+      assistantContent = enforceSingleQuestion(assistantContent) ?? assistantContent.trim();
+
       // Finalize streaming message with stable id
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === "streaming" ? { ...m, id: Date.now().toString() } : m
+          m.id === "streaming" ? { ...m, id: Date.now().toString(), content: assistantContent } : m
         )
       );
 
