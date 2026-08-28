@@ -11,7 +11,6 @@ interface Essay { id: string; topic: string; subject: string; content: string; m
 interface Evaluation { grade: string; feedback: string; updated_at: string; }
 interface AiFeedback { strengths: string[]; weaknesses: string[]; suggestions: string[] }
 
-const FEEDBACK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/essay-feedback`;
 
 const StudentFeedback = () => {
   const { id } = useParams();
@@ -51,16 +50,11 @@ const StudentFeedback = () => {
   const generateFeedback = async () => {
     setGenerating(true);
     try {
-      const resp = await fetch(FEEDBACK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ topic: essay.topic, subject: essay.subject, content: essay.content }),
+      const { data, error } = await supabase.functions.invoke("essay-feedback", {
+        body: { topic: essay.topic, subject: essay.subject, content: essay.content },
       });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error || `Error ${resp.status}`);
+      if (error) throw new Error((data as { error?: string } | null)?.error || error.message);
+      if ((data as { error?: string } | null)?.error) throw new Error((data as { error: string }).error);
       setAiFeedback(data);
       await supabase
         .from("essays")

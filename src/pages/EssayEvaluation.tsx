@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-const EVAL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate-essay`;
 
 interface Criterion { key: string; label: string; score: number; max: number; explanation: string }
 interface WeakExcerpt { excerpt: string; reason: string }
@@ -66,16 +65,11 @@ const EssayEvaluation = () => {
     if (!essay) return;
     setRunning(true);
     try {
-      const resp = await fetch(EVAL_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ topic: essay.topic, subject: essay.subject, content: text }),
+      const { data, error } = await supabase.functions.invoke("evaluate-essay", {
+        body: { topic: essay.topic, subject: essay.subject, content: text },
       });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error || `Error ${resp.status}`);
+      if (error) throw new Error((data as { error?: string } | null)?.error || error.message);
+      if ((data as { error?: string } | null)?.error) throw new Error((data as { error: string }).error);
       setPrevious(evaluation?.total ?? null);
       setEvaluation(data as Evaluation);
       await supabase
