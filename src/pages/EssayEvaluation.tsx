@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-const EVAL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evaluate-essay`;
 
 interface Criterion { key: string; label: string; score: number; max: number; explanation: string }
 interface WeakExcerpt { excerpt: string; reason: string }
