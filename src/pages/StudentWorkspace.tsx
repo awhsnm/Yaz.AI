@@ -185,6 +185,11 @@ const StudentWorkspace = () => {
   }, [remaining, loading, isSubmitted, essay, essayId, toast, t, timed, researchMode]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    // Solo mode allows copy-paste; classroom/brainstorm remain locked.
+    if (mode === "solo") {
+      pendingPaste.current += e.clipboardData?.getData("text")?.length ?? 1;
+      return;
+    }
     e.preventDefault();
     pendingPaste.current += e.clipboardData?.getData("text")?.length ?? 1;
     if (essayId && user) {
@@ -198,7 +203,7 @@ const StudentWorkspace = () => {
       }).then(() => {});
     }
     toast({ title: t("workspace.pasteOff"), description: t("workspace.pasteHint"), variant: "destructive" });
-  }, [toast, t, essay, essayId, user]);
+  }, [toast, t, essay, essayId, user, mode]);
 
   const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
