@@ -23,3 +23,12 @@ This repository documents a prototype and pilot-ready research instrument. It do
 If you use or refer to this software, cite it as:
 
 Aruzhan, M. (2026). *Guided Inkwell: Proactive Socratic AI Writing Coach* [Web application source code]. GitHub. https://github.com/awhsnm/guided-inkwell
+
+## Public repository note
+
+This public repository contains application source code only. Live backend
+configuration and participant data are **not** included: environment values
+(`.env`), backend secrets (including the research-pilot invite code), database
+contents, participant records, essay drafts, and interaction logs are stored
+outside the repository and are never committed. Use `.env.example` as a
+template for local configuration.

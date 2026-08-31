@@ -35,7 +35,7 @@ Database: one new table `research_questionnaires` (essay_id, participant_id, ans
 
 ## How invite-code validation is secured
 
-- The code lives only as a backend secret (`RESEARCH_PILOT_INVITE_CODE`, first value `PILOT2026`). Never in client source, `.env`, or the bundle.
+- The code lives only as a backend secret (`RESEARCH_PILOT_INVITE_CODE`, value stored only in the backend secret store). Never in client source, `.env`, or the bundle.
 - The client posts the entered code to the `research-invite` edge function with the user's auth token. The function compares it (constant-time) to the secret and, on success, ensures the participant record and creates/returns the pilot essay with `research_mode = true`. On failure it returns a generic error.
 - Rate limiting: failed attempts throttled per user (short cooldown after 5 failures) to block guessing.
 - The code itself is never returned to the client, and the client cannot set `research_mode` on its own — the function is the only writer of that flag.
