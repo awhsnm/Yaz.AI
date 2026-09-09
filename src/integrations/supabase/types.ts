@@ -79,6 +79,87 @@ export type Database = {
         }
         Relationships: []
       }
+      beta_allowlist: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          invited_at: string
+          last_login_at: string | null
+          notes: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          invited_at?: string
+          last_login_at?: string | null
+          notes?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          invited_at?: string
+          last_login_at?: string | null
+          notes?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      beta_feedback: {
+        Row: {
+          admin_note: string | null
+          category: string
+          created_at: string
+          id: string
+          message: string
+          page_url: string | null
+          screenshot_path: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          message: string
+          page_url?: string | null
+          screenshot_path?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          message?: string
+          page_url?: string | null
+          screenshot_path?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bug_reports: {
         Row: {
           created_at: string
@@ -288,6 +369,42 @@ export type Database = {
           },
         ]
       }
+      error_logs: {
+        Row: {
+          created_at: string
+          details: string | null
+          feature: string | null
+          id: string
+          message: string
+          page: string | null
+          severity: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          feature?: string | null
+          id?: string
+          message: string
+          page?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          feature?: string | null
+          id?: string
+          message?: string
+          page?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       essays: {
         Row: {
           ai_checked_at: string | null
@@ -418,6 +535,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      login_events: {
+        Row: {
+          created_at: string
+          id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -648,6 +786,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id?: string }; Returns: boolean }
+      record_beta_login: { Args: { _user_agent?: string }; Returns: string }
       student_owns_essay: {
         Args: { _essay_id: string; _student: string }
         Returns: boolean
