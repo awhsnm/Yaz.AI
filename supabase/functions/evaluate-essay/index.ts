@@ -137,6 +137,14 @@ serve(async (req) => {
     let parsed: Record<string, unknown> = {};
     try { parsed = JSON.parse(raw); } catch { parsed = {}; }
 
+    const rejected = rejection(parsed);
+    if (rejected) {
+      return new Response(JSON.stringify(rejected), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     const order = ["task_response", "argumentation", "structure", "language"];
     const incoming = Array.isArray(parsed.criteria) ? parsed.criteria as Record<string, unknown>[] : [];
     const criteria = order.map((key, idx) => {
