@@ -802,11 +802,23 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
+      join_classroom_by_code: {
+        Args: { _code: string }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       record_beta_login: { Args: { _user_agent?: string }; Returns: string }
       student_owns_essay: {
         Args: { _essay_id: string; _student: string }
         Returns: boolean
       }
+      submit_classroom_essay: {
+        Args: { _essay_id: string; _password: string }
+        Returns: boolean
+      }
+      teacher_can_view_student: { Args: { _student: string }; Returns: boolean }
       teacher_owns_essay_classroom: {
         Args: { _essay_id: string; _teacher: string }
         Returns: boolean
