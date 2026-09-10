@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BookOpen, Search, FileText, CheckCircle2, Clock, Plus,
-  Copy, KeyRound, Power, ShieldCheck,
+  Copy, KeyRound, Power,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ interface Classroom {
   id: string;
   access_code: string;
   is_active: boolean;
-  exit_password: string | null;
   name: string | null;
   created_at: string;
 }
@@ -40,8 +39,6 @@ interface EssayRow {
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const genCode = () =>
-  Array.from({ length: 6 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
-const genExitPassword = () =>
   Array.from({ length: 6 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
 
 const TeacherDashboard = () => {
@@ -117,13 +114,11 @@ const TeacherDashboard = () => {
     if (!user) return;
     setBusy(true);
     const code = genCode();
-    const exit = genExitPassword();
     const { data, error } = await supabase
       .from("classrooms")
       .insert({
         teacher_id: user.id,
         access_code: code,
-        exit_password: exit,
         name: lessonName.trim() || `Lesson ${new Date().toLocaleDateString()}`,
       })
       .select()

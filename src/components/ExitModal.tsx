@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Lock, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +21,6 @@ interface ExitModalProps {
 }
 
 const ExitModal = ({ open, onClose, essayContent, essayId, soloMode = false }: ExitModalProps) => {
-  const [exitPassword, setExitPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
