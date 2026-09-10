@@ -240,6 +240,9 @@ const TeacherDashboard = () => {
                         {activeFilter === c.id ? t("teacher.showing") : t("teacher.filter")}
                       </Button>
                     </div>
+                    <Button size="sm" className="w-full h-8 text-xs mt-2" onClick={() => navigate(`/classroom/${c.id}`)}>
+                      Open classroom
+                    </Button>
                   </div>
                 );
               })}
