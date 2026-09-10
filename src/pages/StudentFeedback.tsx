@@ -24,6 +24,7 @@ const StudentFeedback = () => {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [aiFeedback, setAiFeedback] = useState<AiFeedback | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [unusable, setUnusable] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -50,12 +51,19 @@ const StudentFeedback = () => {
 
   const generateFeedback = async () => {
     setGenerating(true);
+    setUnusable(null);
     try {
       const { data, error } = await supabase.functions.invoke("essay-feedback", {
         body: { topic: essay.topic, subject: essay.subject, content: essay.content },
       });
       if (error) throw new Error((data as { error?: string } | null)?.error || error.message);
       if ((data as { error?: string } | null)?.error) throw new Error((data as { error: string }).error);
+      const payload = data as { is_valid_essay?: boolean; message?: string };
+      if (payload?.is_valid_essay === false) {
+        setUnusable(payload.message ?? "This draft cannot be reviewed as an essay.");
+        setAiFeedback(null);
+        return;
+      }
       setAiFeedback(data);
       await supabase
         .from("essays")
@@ -165,6 +173,7 @@ const StudentFeedback = () => {
                 <Button onClick={generateFeedback} disabled={generating || wc < 20} className="w-full font-display">
                   {generating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analyzing...</> : <>✨ Generate AI Feedback</>}
                 </Button>
+                {unusable && <p className="text-sm font-display text-warning">{unusable}</p>}
                 {wc < 20 && <p className="text-xs font-display text-muted-foreground">Write at least 20 words to get feedback.</p>}
               </div>
             ) : (

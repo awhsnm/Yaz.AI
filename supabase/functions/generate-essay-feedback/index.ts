@@ -1,13 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, enforceRateLimit, jsonResponse, requireUser, sanitizeUserText } from "../_shared/security.ts";
+import { rejection, VALIDITY_RULES } from "../_shared/essay-validity.ts";
 
 const MODEL = "google/gemini-3.6-flash";
-const PROMPT_VERSION = "v1-2026-09";
+const PROMPT_VERSION = "v2-validity-2026-09";
 
 const TEACHER_SYSTEM_PROMPT = `You are an AI assistant that prepares a provisional assessment brief for a teacher reviewing an upper-secondary student's argumentative essay.
 The student may be writing English as an additional language.
 You are not the final grader. Your assessment is only a draft aid for teacher review.
+
+${VALIDITY_RULES}
 
 Assess the essay analytically through:
 1. Ideas and reasoning: central claim, quality of reasons, evidence, explanation, qualification, counterargument, and conclusion alignment.
@@ -31,7 +34,8 @@ Scores are integers 1-6, or null when there is not enough evidence to judge fair
 Base every statement about AI-coach interaction ONLY on the factual interaction data supplied. If no interaction data is supplied, use "Insufficient data" or "No observable engagement" and say the system cannot infer causation.
 
 Return strict JSON only, of this exact shape:
-{"assessment_confidence":"High | Medium | Low",
+{"is_valid_essay":true,
+"assessment_confidence":"High | Medium | Low",
 "ideas_reasoning":{"score":1,"confidence":"High | Medium | Low","rationale":"..."},
 "organization":{"score":1,"confidence":"High | Medium | Low","rationale":"..."},
 "voice":{"score":1,"confidence":"High | Medium | Low","rationale":"..."},
@@ -49,7 +53,9 @@ Return strict JSON only, of this exact shape:
 const STUDENT_SYSTEM_PROMPT = `You are a formative writing-feedback assistant for upper-secondary students, including students who write English as an additional language.
 Your role is to help the student reflect on a submitted argumentative essay. You are not a final grader, examiner, proofreader, or ghostwriter.
 
-Write supportive, calm, concise feedback.
+${VALIDITY_RULES}
+
+Write calm, concise, honest feedback.
 Identify one or two strongest arguments or writing moves.
 Identify one or two high-value next steps for revision.
 End with one concise Socratic revision question.
@@ -59,7 +65,7 @@ Do not give numeric scores, grades, percentages, rankings, pass/fail labels, or 
 Do not say 'weakest part'.
 Do not compare the student with native speakers or classmates.
 Do not treat grammar errors as weak thinking.
-Do not overpraise.
+Do not praise, flatter, or overstate. No sycophancy of any kind.
 Do not use harsh language.
 Do not rewrite the essay.
 Do not provide a replacement thesis, paragraph, sentence, outline, evidence, example, citation, source, or direct answer.
@@ -68,7 +74,8 @@ Do not mention AI prompts, coach interaction, writing analytics, or anything abo
 Keep the full feedback between 90 and 130 words.
 
 Return strict JSON only:
-{"what_is_working_well":["...","..."],"next_step_for_revision":"...","revision_question":"One open-ended Socratic question ending with a question mark."}`;
+{"is_valid_essay":true,"what_is_working_well":["...","..."],"next_step_for_revision":"...","revision_question":"One open-ended Socratic question ending with a question mark."}`;
+
 
 function admin() {
   return createClient(
@@ -282,6 +289,11 @@ AI COACH INTERACTION DATA: ${interactionBlock}
 ESSAY:
 ${numbered}`,
         );
+        const rejected = rejection(parsed);
+        if (rejected) {
+          out.teacher_assessment = null;
+          out.unusable_submission = rejected;
+        } else {
         const trait = (k: string) => {
           const t = (parsed?.[k] ?? {}) as Record<string, unknown>;
           return { score: score(t.score), confidence: conf(t.confidence), rationale: text(t.rationale, 600) };
@@ -324,6 +336,7 @@ ${numbered}`,
         const { data: saved } = await db.from("essay_teacher_assessments")
           .upsert(row, { onConflict: "essay_id" }).select("*").maybeSingle();
         out.teacher_assessment = saved ?? row;
+        }
       } catch (e) {
         console.error("teacher assessment failed", e);
         errors.push("teacher_assessment");
@@ -342,6 +355,14 @@ ${numbered}`,
 ESSAY:
 ${numbered}`,
         );
+        const rejectedStudent = rejection(parsed);
+        if (rejectedStudent) {
+          out.student_feedback = null;
+          out.unusable_submission = rejectedStudent;
+          if (isStudentAuthor && !isTeacher && !isAdmin) out.teacher_assessment = null;
+          if (errors.length) out.errors = errors;
+          return jsonResponse(out);
+        }
         const working = strList(parsed?.what_is_working_well, 2);
         const next = text(parsed?.next_step_for_revision, 600);
         let question = text(parsed?.revision_question, 300);

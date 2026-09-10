@@ -90,6 +90,12 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
       });
       if (error) throw new Error((res as { error?: string } | null)?.error || error.message);
       if ((res as { error?: string } | null)?.error) throw new Error((res as { error: string }).error);
+      const unusable = (res as { unusable_submission?: { message?: string } } | null)?.unusable_submission;
+      if (unusable) {
+        toast({ title: "Not an essay submission", description: unusable.message });
+        setBusy(false);
+        return;
+      }
       await load();
       toast({ title: force ? "Brief regenerated" : "Brief ready" });
     } catch (err) {

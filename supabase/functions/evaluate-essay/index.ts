@@ -1,8 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, enforceRateLimit, requireUser, sanitizeUserText } from "../_shared/security.ts";
+import { rejection, VALIDITY_RULES } from "../_shared/essay-validity.ts";
 
 const SYSTEM_PROMPT = `You are an academic essay examiner assessing a high school student's essay (English B1-B2 level).
 Grade strictly and fairly against a 100-point, 4-pillar rubric. Each criterion is scored 0-25.
+
+${VALIDITY_RULES}
+
 
 CRITERION 1 — Task Response & Thesis Strength (0-25)
 Clarity of the central thesis, sustained focus, and how comprehensively the prompt is addressed.
@@ -26,6 +30,7 @@ RULES
 
 Return ONLY valid JSON of this exact shape, no prose, no markdown, no code fences:
 {
+  "is_valid_essay": true,
   "total": 0,
   "band": "...",
   "criteria": [
@@ -131,6 +136,14 @@ serve(async (req) => {
     const raw = data.choices?.[0]?.message?.content ?? "{}";
     let parsed: Record<string, unknown> = {};
     try { parsed = JSON.parse(raw); } catch { parsed = {}; }
+
+    const rejected = rejection(parsed);
+    if (rejected) {
+      return new Response(JSON.stringify(rejected), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     const order = ["task_response", "argumentation", "structure", "language"];
     const incoming = Array.isArray(parsed.criteria) ? parsed.criteria as Record<string, unknown>[] : [];
