@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import AnnotatedText, { type Annotation } from "@/components/AnnotatedText";
 import WritingPlayback from "@/components/WritingPlayback";
+import TeacherAssessmentBrief from "@/components/TeacherAssessmentBrief";
 
 interface Essay {
   id: string;
@@ -340,6 +341,16 @@ const TeacherReview = () => {
               </Button>
             </div>
           </div>
+
+          {/* Teacher-only AI assessment brief (additive; never changes the saved grade) */}
+          <TeacherAssessmentBrief
+            essayId={essay.id}
+            isSubmitted={essay.is_submitted}
+            studentName={studentName}
+            essayTitle={essay.topic}
+            assignmentTitle={essay.topic}
+            onOpenPlayback={() => setPlaybackOpen(true)}
+          />
         </div>
 
         {/* Sidebar: comments + chat */}
