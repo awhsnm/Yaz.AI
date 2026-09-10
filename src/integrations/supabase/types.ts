@@ -1077,6 +1077,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
+      is_beta_active: { Args: { _user_id: string }; Returns: boolean }
       join_classroom_by_code: {
         Args: { _code: string }
         Returns: {
