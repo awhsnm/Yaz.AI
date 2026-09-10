@@ -231,11 +231,7 @@ const TeacherDashboard = () => {
                         {c.is_active ? t("teacher.active") : t("teacher.inactive")}
                       </Badge>
                     </div>
-                    <div className="text-xs text-muted-foreground font-display mt-2 flex items-center gap-2">
-                      <ShieldCheck className="w-3 h-3" />
-                      {t("teacher.exit")}: <span className="font-mono font-semibold text-foreground">{c.exit_password}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-display mt-1">
+                    <p className="text-xs text-muted-foreground font-display mt-2">
                       {liveCount} {t("teacher.students")} · {assignmentCounts[c.id] ?? 0} assignments · {submittedCount} submitted
                     </p>
                     <div className="flex items-center gap-2 mt-3">

@@ -36,7 +36,6 @@ const ExitModal = ({ open, onClose, essayContent, essayId, soloMode = false }: E
     // Save the latest content first (essay is locked but not yet finalized)
     await supabase.from("essays").update({ content: essayContent }).eq("id", essayId);
 
-    // Solo / brainstorm sessions have no teacher passkey — submit freely.
     if (soloMode) {
       await supabase.from("essays").update({ is_submitted: true }).eq("id", essayId);
       setBusy(false);
@@ -44,10 +43,9 @@ const ExitModal = ({ open, onClose, essayContent, essayId, soloMode = false }: E
       return;
     }
 
-    // The exit password is verified on the server; it never reaches the browser.
+    // Lesson essays are finalized server-side; no exit code is required.
     const { data: ok, error } = await supabase.rpc("submit_classroom_essay", {
       _essay_id: essayId,
-      _password: exitPassword.trim(),
     });
 
     setBusy(false);
@@ -82,16 +80,6 @@ const ExitModal = ({ open, onClose, essayContent, essayId, soloMode = false }: E
             </p>
           </div>
 
-          {!soloMode && (
-            <Input
-              type="password"
-              placeholder={t("exit.pw")}
-              value={exitPassword}
-              onChange={(e) => { setExitPassword(e.target.value); setError(""); }}
-              onKeyDown={(e) => e.key === "Enter" && handleExit()}
-              className="font-display"
-            />
-          )}
 
           {error && <p className="text-destructive text-sm font-display">{error}</p>}
 

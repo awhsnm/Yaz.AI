@@ -103,7 +103,7 @@ const TeacherClassroom = () => {
     };
     const { error } = editing
       ? await supabase.from("assignments").update(payload).eq("id", editing.id)
-      : await supabase.from("assignments").insert({ ...payload, classroom_id: id, created_by: user.id });
+      : await supabase.from("assignments").insert({ ...payload, classroom_id: id, created_by: user.id, is_published: true });
     setBusy(false);
     if (error) {
       toast({ title: "Could not save assignment", description: error.message, variant: "destructive" });
