@@ -77,6 +77,14 @@ const StudentFeedbackCard = ({ essayId, isSubmitted }: Props) => {
         </p>
       )}
 
+      {state === "unusable" && (
+        <p className="text-sm font-display text-foreground">
+          {unusable ??
+            "The submitted draft does not appear to be an argumentative or analytical essay. It consists of informal notes, placeholder commentary, or unrelated text. Please draft an essay that directly addresses the prompt to receive a diagnostic evaluation."}
+        </p>
+      )}
+
+
       {state === "ready" && data && (
         <div className="space-y-4">
           <div>
