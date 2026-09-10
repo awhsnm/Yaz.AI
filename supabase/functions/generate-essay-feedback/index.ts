@@ -10,6 +10,8 @@ const TEACHER_SYSTEM_PROMPT = `You are an AI assistant that prepares a provision
 The student may be writing English as an additional language.
 You are not the final grader. Your assessment is only a draft aid for teacher review.
 
+${VALIDITY_RULES}
+
 Assess the essay analytically through:
 1. Ideas and reasoning: central claim, quality of reasons, evidence, explanation, qualification, counterargument, and conclusion alignment.
 2. Organization: paragraph sequence, logical progression, connections, and conclusion fit.
