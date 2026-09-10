@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import AnnotatedText, { type Annotation } from "@/components/AnnotatedText";
+import StudentFeedbackCard from "@/components/StudentFeedbackCard";
 import { useToast } from "@/hooks/use-toast";
 
-interface Essay { id: string; topic: string; subject: string; content: string; mode: string | null; classroom_id: string | null; ai_feedback: string | null; }
+interface Essay { id: string; topic: string; subject: string; content: string; mode: string | null; classroom_id: string | null; ai_feedback: string | null; is_submitted: boolean; }
 interface Evaluation { grade: string; feedback: string; updated_at: string; }
 interface AiFeedback { strengths: string[]; weaknesses: string[]; suggestions: string[] }
 
@@ -28,7 +29,7 @@ const StudentFeedback = () => {
     if (!id) return;
     (async () => {
       const [{ data: e }, { data: a }, { data: ev }] = await Promise.all([
-        supabase.from("essays").select("id, topic, subject, content, mode, classroom_id, ai_feedback").eq("id", id).maybeSingle(),
+        supabase.from("essays").select("id, topic, subject, content, mode, classroom_id, ai_feedback, is_submitted").eq("id", id).maybeSingle(),
         supabase.from("annotations").select("id, start_index, end_index, color_code, comment_text").eq("essay_id", id).order("start_index"),
         supabase.from("evaluations").select("grade, feedback, updated_at").eq("essay_id", id).maybeSingle(),
       ]);
