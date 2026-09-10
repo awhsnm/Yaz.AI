@@ -461,6 +461,214 @@ export type Database = {
         }
         Relationships: []
       }
+      essay_student_feedback: {
+        Row: {
+          created_at: string
+          essay_id: string
+          feedback_text: string | null
+          generated_at: string
+          id: string
+          model_version: string | null
+          next_step_for_revision: string | null
+          prompt_version: string | null
+          revision_question: string | null
+          student_id: string
+          updated_at: string
+          what_is_working_well: Json
+        }
+        Insert: {
+          created_at?: string
+          essay_id: string
+          feedback_text?: string | null
+          generated_at?: string
+          id?: string
+          model_version?: string | null
+          next_step_for_revision?: string | null
+          prompt_version?: string | null
+          revision_question?: string | null
+          student_id: string
+          updated_at?: string
+          what_is_working_well?: Json
+        }
+        Update: {
+          created_at?: string
+          essay_id?: string
+          feedback_text?: string | null
+          generated_at?: string
+          id?: string
+          model_version?: string | null
+          next_step_for_revision?: string | null
+          prompt_version?: string | null
+          revision_question?: string | null
+          student_id?: string
+          updated_at?: string
+          what_is_working_well?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essay_student_feedback_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: true
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      essay_teacher_assessments: {
+        Row: {
+          ai_coach_paused: boolean | null
+          ai_prompt_topics: Json
+          ai_questions_answered: number | null
+          ai_questions_not_now: number | null
+          ai_questions_shown: number | null
+          ai_questions_skipped: number | null
+          ai_revision_confidence: string | null
+          ai_suggested_revision_type: string | null
+          ai_support_interpretation: string | null
+          ai_support_label: string | null
+          assessment_confidence: string | null
+          conventions_confidence: string | null
+          conventions_rationale: string | null
+          conventions_score: number | null
+          created_at: string
+          essay_id: string
+          final_word_count: number | null
+          generated_at: string
+          id: string
+          ideas_reasoning_confidence: string | null
+          ideas_reasoning_rationale: string | null
+          ideas_reasoning_score: number | null
+          meaningful_revision_count: number | null
+          model_version: string | null
+          organization_confidence: string | null
+          organization_rationale: string | null
+          organization_score: number | null
+          paragraph_count: number | null
+          possible_teacher_questions: Json
+          priority_improvement_areas: Json
+          prompt_version: string | null
+          researcher_coded_revision_type: string | null
+          sentence_fluency_confidence: string | null
+          sentence_fluency_rationale: string | null
+          sentence_fluency_score: number | null
+          strongest_arguments: Json
+          submitted_at: string | null
+          teacher_confirmed_revision_type: string | null
+          updated_at: string
+          voice_confidence: string | null
+          voice_rationale: string | null
+          voice_score: number | null
+          word_choice_clarity_confidence: string | null
+          word_choice_clarity_rationale: string | null
+          word_choice_clarity_score: number | null
+          writing_duration_seconds: number | null
+        }
+        Insert: {
+          ai_coach_paused?: boolean | null
+          ai_prompt_topics?: Json
+          ai_questions_answered?: number | null
+          ai_questions_not_now?: number | null
+          ai_questions_shown?: number | null
+          ai_questions_skipped?: number | null
+          ai_revision_confidence?: string | null
+          ai_suggested_revision_type?: string | null
+          ai_support_interpretation?: string | null
+          ai_support_label?: string | null
+          assessment_confidence?: string | null
+          conventions_confidence?: string | null
+          conventions_rationale?: string | null
+          conventions_score?: number | null
+          created_at?: string
+          essay_id: string
+          final_word_count?: number | null
+          generated_at?: string
+          id?: string
+          ideas_reasoning_confidence?: string | null
+          ideas_reasoning_rationale?: string | null
+          ideas_reasoning_score?: number | null
+          meaningful_revision_count?: number | null
+          model_version?: string | null
+          organization_confidence?: string | null
+          organization_rationale?: string | null
+          organization_score?: number | null
+          paragraph_count?: number | null
+          possible_teacher_questions?: Json
+          priority_improvement_areas?: Json
+          prompt_version?: string | null
+          researcher_coded_revision_type?: string | null
+          sentence_fluency_confidence?: string | null
+          sentence_fluency_rationale?: string | null
+          sentence_fluency_score?: number | null
+          strongest_arguments?: Json
+          submitted_at?: string | null
+          teacher_confirmed_revision_type?: string | null
+          updated_at?: string
+          voice_confidence?: string | null
+          voice_rationale?: string | null
+          voice_score?: number | null
+          word_choice_clarity_confidence?: string | null
+          word_choice_clarity_rationale?: string | null
+          word_choice_clarity_score?: number | null
+          writing_duration_seconds?: number | null
+        }
+        Update: {
+          ai_coach_paused?: boolean | null
+          ai_prompt_topics?: Json
+          ai_questions_answered?: number | null
+          ai_questions_not_now?: number | null
+          ai_questions_shown?: number | null
+          ai_questions_skipped?: number | null
+          ai_revision_confidence?: string | null
+          ai_suggested_revision_type?: string | null
+          ai_support_interpretation?: string | null
+          ai_support_label?: string | null
+          assessment_confidence?: string | null
+          conventions_confidence?: string | null
+          conventions_rationale?: string | null
+          conventions_score?: number | null
+          created_at?: string
+          essay_id?: string
+          final_word_count?: number | null
+          generated_at?: string
+          id?: string
+          ideas_reasoning_confidence?: string | null
+          ideas_reasoning_rationale?: string | null
+          ideas_reasoning_score?: number | null
+          meaningful_revision_count?: number | null
+          model_version?: string | null
+          organization_confidence?: string | null
+          organization_rationale?: string | null
+          organization_score?: number | null
+          paragraph_count?: number | null
+          possible_teacher_questions?: Json
+          priority_improvement_areas?: Json
+          prompt_version?: string | null
+          researcher_coded_revision_type?: string | null
+          sentence_fluency_confidence?: string | null
+          sentence_fluency_rationale?: string | null
+          sentence_fluency_score?: number | null
+          strongest_arguments?: Json
+          submitted_at?: string | null
+          teacher_confirmed_revision_type?: string | null
+          updated_at?: string
+          voice_confidence?: string | null
+          voice_rationale?: string | null
+          voice_score?: number | null
+          word_choice_clarity_confidence?: string | null
+          word_choice_clarity_rationale?: string | null
+          word_choice_clarity_score?: number | null
+          writing_duration_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essay_teacher_assessments_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: true
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       essays: {
         Row: {
           ai_checked_at: string | null
