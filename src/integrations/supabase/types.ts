@@ -761,6 +761,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      beta_progress: {
+        Args: never
+        Returns: {
+          email: string
+          essay_count: number
+          feedback_count: number
+          full_name: string
+          invited_at: string
+          last_login_at: string
+          role: Database["public"]["Enums"]["app_role"]
+          signed_up: boolean
+          status: string
+          submitted_count: number
+        }[]
+      }
       ensure_research_participant: {
         Args: never
         Returns: {

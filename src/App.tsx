@@ -27,6 +27,7 @@ import { SettingsProvider } from "./contexts/SettingsContext";
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminEssays = lazy(() => import("./pages/admin/AdminEssays"));
+const AdminProgress = lazy(() => import("./pages/admin/AdminProgress"));
 const AdminFeedback = lazy(() => import("./pages/admin/AdminFeedback"));
 const AdminHealth = lazy(() => import("./pages/admin/AdminHealth"));
 
@@ -70,6 +71,7 @@ const App = () => (
                 }
               >
                 <Route index element={<Suspense fallback={AdminFallback}><AdminUsers /></Suspense>} />
+                <Route path="progress" element={<Suspense fallback={AdminFallback}><AdminProgress /></Suspense>} />
                 <Route path="essays" element={<Suspense fallback={AdminFallback}><AdminEssays /></Suspense>} />
                 <Route path="feedback" element={<Suspense fallback={AdminFallback}><AdminFeedback /></Suspense>} />
                 <Route path="health" element={<Suspense fallback={AdminFallback}><AdminHealth /></Suspense>} />
