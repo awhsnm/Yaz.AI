@@ -336,6 +336,7 @@ ${numbered}`,
         const { data: saved } = await db.from("essay_teacher_assessments")
           .upsert(row, { onConflict: "essay_id" }).select("*").maybeSingle();
         out.teacher_assessment = saved ?? row;
+        }
       } catch (e) {
         console.error("teacher assessment failed", e);
         errors.push("teacher_assessment");
