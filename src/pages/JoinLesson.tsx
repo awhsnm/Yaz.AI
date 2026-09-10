@@ -34,18 +34,15 @@ const JoinLesson = () => {
       return;
     }
     setBusy(true);
-    const { data, error: err } = await supabase
-      .from("classrooms")
-      .select("id, name, is_active")
-      .eq("access_code", trimmed)
-      .maybeSingle();
+    const { data, error: err } = await supabase.rpc("join_classroom_by_code", { _code: trimmed });
     setBusy(false);
-    if (err || !data || !data.is_active) {
+    const room = Array.isArray(data) ? data[0] : null;
+    if (err || !room) {
       setError(t("join.invalid"));
       return;
     }
-    setClassroomId(data.id);
-    setClassroomName(data.name ?? "Lesson");
+    setClassroomId(room.id);
+    setClassroomName(room.name ?? "Lesson");
   };
 
   const startEssay = async () => {

@@ -44,33 +44,19 @@ const ExitModal = ({ open, onClose, essayContent, essayId, soloMode = false }: E
       return;
     }
 
-    // Look up the classroom's exit password via the essay
-    const { data: e } = await supabase
-      .from("essays")
-      .select("classroom_id")
-      .eq("id", essayId)
-      .maybeSingle();
-
-    if (!e?.classroom_id) {
-      setBusy(false);
-      setError(t("exit.wrong"));
-      return;
-    }
-
-    const { data: c } = await supabase
-      .from("classrooms")
-      .select("exit_password")
-      .eq("id", e.classroom_id)
-      .maybeSingle();
+    // The exit password is verified on the server; it never reaches the browser.
+    const { data: ok, error } = await supabase.rpc("submit_classroom_essay", {
+      _essay_id: essayId,
+      _password: exitPassword.trim(),
+    });
 
     setBusy(false);
 
-    if (!c?.exit_password || exitPassword.trim().toUpperCase() !== c.exit_password.toUpperCase()) {
+    if (error || ok !== true) {
       setError(t("exit.wrong"));
       return;
     }
 
-    await supabase.from("essays").update({ is_submitted: true }).eq("id", essayId);
     navigate("/student-dashboard");
   };
 
