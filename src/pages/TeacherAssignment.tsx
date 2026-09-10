@@ -176,6 +176,9 @@ const TeacherAssignment = () => {
                   <Badge variant={r.is_submitted ? "default" : "outline"} className="font-display text-xs">
                     {r.is_submitted ? "Submitted" : "In progress"}
                   </Badge>
+                  {!r.linked && (
+                    <span className="text-xs font-display text-muted-foreground">Lesson code essay</span>
+                  )}
                   {r.grade && <span className="text-xs font-display text-muted-foreground">Grade: {r.grade}</span>}
                 </div>
               </button>
