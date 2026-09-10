@@ -1,8 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, enforceRateLimit, requireUser, sanitizeUserText } from "../_shared/security.ts";
+import { rejection, VALIDITY_RULES } from "../_shared/essay-validity.ts";
 
 const SYSTEM_PROMPT = `You are an academic essay examiner assessing a high school student's essay (English B1-B2 level).
 Grade strictly and fairly against a 100-point, 4-pillar rubric. Each criterion is scored 0-25.
+
+${VALIDITY_RULES}
+
 
 CRITERION 1 — Task Response & Thesis Strength (0-25)
 Clarity of the central thesis, sustained focus, and how comprehensively the prompt is addressed.
