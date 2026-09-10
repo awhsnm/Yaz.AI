@@ -50,12 +50,19 @@ const StudentFeedback = () => {
 
   const generateFeedback = async () => {
     setGenerating(true);
+    setUnusable(null);
     try {
       const { data, error } = await supabase.functions.invoke("essay-feedback", {
         body: { topic: essay.topic, subject: essay.subject, content: essay.content },
       });
       if (error) throw new Error((data as { error?: string } | null)?.error || error.message);
       if ((data as { error?: string } | null)?.error) throw new Error((data as { error: string }).error);
+      const payload = data as { is_valid_essay?: boolean; message?: string };
+      if (payload?.is_valid_essay === false) {
+        setUnusable(payload.message ?? "This draft cannot be reviewed as an essay.");
+        setAiFeedback(null);
+        return;
+      }
       setAiFeedback(data);
       await supabase
         .from("essays")
