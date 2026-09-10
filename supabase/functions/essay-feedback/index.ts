@@ -65,10 +65,14 @@ serve(async (req) => {
 
     const data = await resp.json();
     const raw = data.choices?.[0]?.message?.content ?? "{}";
-    let parsed: { strengths?: string[]; weaknesses?: string[]; suggestions?: string[] } = {};
+    let parsed: { strengths?: string[]; weaknesses?: string[]; suggestions?: string[]; is_valid_essay?: boolean } = {};
     try { parsed = JSON.parse(raw); } catch { parsed = {}; }
 
+    const rejected = rejection(parsed as Record<string, unknown>);
+    if (rejected) return jsonResponse(rejected);
+
     return jsonResponse({
+      is_valid_essay: true,
       strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
       weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [],
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
