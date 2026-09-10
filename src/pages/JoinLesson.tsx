@@ -16,6 +16,7 @@ interface AssignmentRow {
   description: string | null;
   prompt: string | null;
   time_limit_minutes: number | null;
+  subject: string | null;
   essay_id: string | null;
   is_submitted: boolean;
 }
@@ -67,7 +68,6 @@ const JoinLesson = () => {
     const { data, error: err } = await supabase.rpc("start_assignment_essay", {
       _assignment_id: a.id,
       _code: code.trim().toUpperCase(),
-      _subject: "English",
     });
     setBusy(false);
     if (err || !data) {
@@ -144,7 +144,7 @@ const JoinLesson = () => {
                 {t("join.joined")}: {classroomName}
               </h2>
               <p className="text-center text-sm text-muted-foreground font-display mb-6">
-                {assignments.length > 0 ? "Assignments" : t("join.setTopic")}
+                {assignments.length > 0 ? "Choose the assignment you want to write" : t("join.setTopic")}
               </p>
 
               {assignments.length > 0 && (
@@ -158,6 +158,7 @@ const JoinLesson = () => {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground font-display mt-2">
+                        {a.subject ? `${a.subject} \u00b7 ` : ""}
                         {a.is_submitted ? "Submitted" : a.essay_id ? "In progress" : "Not started"}
                         {a.time_limit_minutes ? ` \u00b7 ${a.time_limit_minutes} min` : ""}
                       </p>

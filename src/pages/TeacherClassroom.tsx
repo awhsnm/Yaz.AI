@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -21,6 +22,7 @@ interface Assignment {
   prompt: string | null;
   instructions: string | null;
   time_limit_minutes: number | null;
+  subject: string;
   is_published: boolean;
   is_archived: boolean;
   created_at: string;
@@ -34,7 +36,9 @@ interface EssayLite {
   content: string;
 }
 
-const emptyForm = { title: "", description: "", prompt: "", instructions: "", time_limit_minutes: 45 };
+const SUBJECTS = ["English", "Russian Literature", "Kazakh Literature", "General"];
+
+const emptyForm = { title: "", description: "", prompt: "", instructions: "", time_limit_minutes: 45, subject: "English" };
 
 const TeacherClassroom = () => {
   const { id } = useParams<{ id: string }>();
@@ -87,6 +91,7 @@ const TeacherClassroom = () => {
       prompt: a.prompt ?? "",
       instructions: a.instructions ?? "",
       time_limit_minutes: a.time_limit_minutes ?? 45,
+      subject: a.subject ?? "English",
     });
     setOpen(true);
   };
@@ -100,6 +105,7 @@ const TeacherClassroom = () => {
       prompt: form.prompt.trim() || null,
       instructions: form.instructions.trim() || null,
       time_limit_minutes: Number(form.time_limit_minutes) || 45,
+      subject: form.subject || "English",
     };
     const { error } = editing
       ? await supabase.from("assignments").update(payload).eq("id", editing.id)
@@ -212,6 +218,15 @@ const TeacherClassroom = () => {
             <div>
               <Label>Instructions (optional)</Label>
               <Textarea rows={2} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
+            </div>
+            <div>
+              <Label>Subject</Label>
+              <Select value={form.subject} onValueChange={(v) => setForm({ ...form, subject: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Time limit (minutes)</Label>

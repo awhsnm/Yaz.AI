@@ -91,6 +91,7 @@ export type Database = {
           is_archived: boolean
           is_published: boolean
           prompt: string | null
+          subject: string
           time_limit_minutes: number | null
           title: string
           updated_at: string
@@ -106,6 +107,7 @@ export type Database = {
           is_archived?: boolean
           is_published?: boolean
           prompt?: string | null
+          subject?: string
           time_limit_minutes?: number | null
           title: string
           updated_at?: string
@@ -121,6 +123,7 @@ export type Database = {
           is_archived?: boolean
           is_published?: boolean
           prompt?: string | null
+          subject?: string
           time_limit_minutes?: number | null
           title?: string
           updated_at?: string
@@ -1097,6 +1100,7 @@ export type Database = {
           instructions: string
           is_submitted: boolean
           prompt: string
+          subject: string
           time_limit_minutes: number
           title: string
         }[]
