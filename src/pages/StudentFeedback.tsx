@@ -24,6 +24,7 @@ const StudentFeedback = () => {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [aiFeedback, setAiFeedback] = useState<AiFeedback | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [unusable, setUnusable] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
