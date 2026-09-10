@@ -96,15 +96,36 @@ const AdminUsers = () => {
       return;
     }
     setBusy(true);
+    const { data: existing, error: readError } = await supabase
+      .from("beta_allowlist")
+      .select("email")
+      .in("email", emails);
+    if (readError) {
+      setBusy(false);
+      logRequestError("admin-invite-bulk-read", readError);
+      toast({ title: "Some entries could not be added.", variant: "destructive" });
+      void load();
+      return;
+    }
+    const known = new Set((existing ?? []).map((r) => r.email.toLowerCase()));
+    const fresh = emails.filter((e) => !known.has(e));
+    if (fresh.length === 0) {
+      setBusy(false);
+      toast({ title: "Everyone on that list is already invited." });
+      setBulk("");
+      void load();
+      return;
+    }
     const { error } = await supabase
       .from("beta_allowlist")
-      .upsert(emails.map((e) => ({ email: e, role: "student" as const })), { onConflict: "email", ignoreDuplicates: true });
+      .insert(fresh.map((e) => ({ email: e, role: "student" as const })));
     setBusy(false);
     if (error) {
       logRequestError("admin-invite-bulk", error);
       toast({ title: "Some entries could not be added.", variant: "destructive" });
     } else {
-      toast({ title: `${emails.length} email(s) processed` });
+      const skipped = emails.length - fresh.length;
+      toast({ title: `${fresh.length} added${skipped ? `, ${skipped} already invited` : ""}` });
       setBulk("");
     }
     void load();
