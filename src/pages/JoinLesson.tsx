@@ -21,6 +21,8 @@ const JoinLesson = () => {
   const [code, setCode] = useState("");
   const [classroomId, setClassroomId] = useState<string | null>(null);
   const [classroomName, setClassroomName] = useState<string>("");
+  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const [showFreeTopic, setShowFreeTopic] = useState(false);
   const [topic, setTopic] = useState("");
   const [subject, setSubject] = useState("");
   const [error, setError] = useState("");
@@ -35,14 +37,34 @@ const JoinLesson = () => {
     }
     setBusy(true);
     const { data, error: err } = await supabase.rpc("join_classroom_by_code", { _code: trimmed });
-    setBusy(false);
     const room = Array.isArray(data) ? data[0] : null;
     if (err || !room) {
+      setBusy(false);
       setError(t("join.invalid"));
       return;
     }
+    const { data: list } = await supabase.rpc("list_classroom_assignments", { _code: trimmed });
+    setBusy(false);
+    setAssignments((list ?? []) as AssignmentRow[]);
+    setShowFreeTopic((list ?? []).length === 0);
     setClassroomId(room.id);
     setClassroomName(room.name ?? "Lesson");
+  };
+
+  const openAssignment = async (a: AssignmentRow) => {
+    if (a.essay_id) { navigate(`/essay/${a.essay_id}`); return; }
+    setBusy(true);
+    const { data, error: err } = await supabase.rpc("start_assignment_essay", {
+      _assignment_id: a.id,
+      _code: code.trim().toUpperCase(),
+      _subject: "English",
+    });
+    setBusy(false);
+    if (err || !data) {
+      toast({ title: t("join.couldNotStart"), description: err?.message, variant: "destructive" });
+      return;
+    }
+    navigate(`/essay/${data as string}`);
   };
 
   const startEssay = async () => {
