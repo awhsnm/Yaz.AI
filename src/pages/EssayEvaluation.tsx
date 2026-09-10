@@ -32,6 +32,7 @@ const EssayEvaluation = () => {
   const [essay, setEssay] = useState<Essay | null>(null);
   const [content, setContent] = useState("");
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const [unusable, setUnusable] = useState<string | null>(null);
   const [previous, setPrevious] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
