@@ -173,6 +173,7 @@ const StudentFeedback = () => {
                 <Button onClick={generateFeedback} disabled={generating || wc < 20} className="w-full font-display">
                   {generating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analyzing...</> : <>✨ Generate AI Feedback</>}
                 </Button>
+                {unusable && <p className="text-sm font-display text-warning">{unusable}</p>}
                 {wc < 20 && <p className="text-xs font-display text-muted-foreground">Write at least 20 words to get feedback.</p>}
               </div>
             ) : (
