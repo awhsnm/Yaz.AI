@@ -1050,6 +1050,7 @@ export type Database = {
           submitted_count: number
         }[]
       }
+      current_user_email: { Args: never; Returns: string }
       ensure_research_participant: {
         Args: never
         Returns: {
