@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser, enforceRateLimit } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +11,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const auth = await requireUser(req);
+    if ("error" in auth) return auth.error;
+    const limited = await enforceRateLimit(auth.user.id, "extract-image-text");
+    if (limited) return limited;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -17,6 +23,12 @@ serve(async (req) => {
     if (!image || typeof image !== "string" || !image.startsWith("data:image/")) {
       return new Response(JSON.stringify({ error: "A base64 image data URL is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Server-side payload cap (~8 MB of base64 data).
+    if (image.length > 11_000_000) {
+      return new Response(JSON.stringify({ error: "That image is too large. Please use one under 8 MB." }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 

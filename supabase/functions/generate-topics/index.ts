@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser, enforceRateLimit } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +42,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const auth = await requireUser(req);
+    if ("error" in auth) return auth.error;
+    const limited = await enforceRateLimit(auth.user.id, "generate-topics");
+    if (limited) return limited;
+
     const { input } = await req.json();
     if (!input || typeof input !== "string" || !input.trim()) {
       return new Response(JSON.stringify({ error: "Input required" }), {

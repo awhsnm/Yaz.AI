@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser, enforceRateLimit } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +45,11 @@ serve(async (req) => {
   }
 
   try {
+    const auth = await requireUser(req);
+    if ("error" in auth) return auth.error;
+    const limited = await enforceRateLimit(auth.user.id, "ai-tutor");
+    if (limited) return limited;
+
     const { messages, topic, subject, currentDraft } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
