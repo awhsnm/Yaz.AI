@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are a friendly writing coach for high school students in Kazakhstan who write in English.
+const SYSTEM_PROMPT = `You are a friendly writing coach for high school students in Kazakhstan. Students may write in English, Russian or Kazakh, and you always answer in the language they used.
 A student will share unstructured thoughts, interests, or a rough idea in any language.
 
 Your task: return exactly 3 essay topic options based on their input.
