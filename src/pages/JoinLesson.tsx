@@ -10,6 +10,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface AssignmentRow {
+  id: string;
+  title: string;
+  description: string | null;
+  prompt: string | null;
+  time_limit_minutes: number | null;
+  essay_id: string | null;
+  is_submitted: boolean;
+}
+
 const SUBJECTS = ["English", "Russian Literature", "Kazakh Literature", "General"];
 
 const JoinLesson = () => {
@@ -134,9 +144,39 @@ const JoinLesson = () => {
                 {t("join.joined")}: {classroomName}
               </h2>
               <p className="text-center text-sm text-muted-foreground font-display mb-6">
-                {t("join.setTopic")}
+                {assignments.length > 0 ? "Assignments" : t("join.setTopic")}
               </p>
-              <div className="space-y-3">
+
+              {assignments.length > 0 && (
+                <div className="space-y-3 mb-4">
+                  {assignments.map((a) => (
+                    <div key={a.id} className="border border-border rounded-lg p-4">
+                      <p className="font-display font-semibold text-foreground">{a.title}</p>
+                      {(a.description || a.prompt) && (
+                        <p className="text-sm text-muted-foreground font-display mt-1 line-clamp-2">
+                          {a.description || a.prompt}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground font-display mt-2">
+                        {a.is_submitted ? "Submitted" : a.essay_id ? "In progress" : "Not started"}
+                        {a.time_limit_minutes ? ` \u00b7 ${a.time_limit_minutes} min` : ""}
+                      </p>
+                      <Button size="sm" className="w-full mt-3 font-display" disabled={busy}
+                        onClick={() => openAssignment(a)}>
+                        {a.is_submitted ? "View submitted essay" : a.essay_id ? "Continue essay" : "Start essay"}
+                      </Button>
+                    </div>
+                  ))}
+                  {!showFreeTopic && (
+                    <Button variant="ghost" size="sm" className="w-full font-display"
+                      onClick={() => setShowFreeTopic(true)}>
+                      Write on my own topic
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <div className={showFreeTopic ? "space-y-3" : "hidden"}>
                 <div>
                   <Label className="font-display">{t("join.topic")}</Label>
                   <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t("join.topicPh")} />

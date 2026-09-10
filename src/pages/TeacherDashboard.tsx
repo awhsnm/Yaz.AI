@@ -89,6 +89,14 @@ const TeacherDashboard = () => {
     ]);
     const map = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
     setRows((e ?? []).map((r) => ({ ...r, student_name: map.get(r.student_id) ?? null })));
+
+    const { data: asg } = await supabase
+      .from("assignments")
+      .select("id, classroom_id")
+      .in("classroom_id", classroomIds);
+    const counts: Record<string, number> = {};
+    (asg ?? []).forEach((a) => { counts[a.classroom_id] = (counts[a.classroom_id] ?? 0) + 1; });
+    setAssignmentCounts(counts);
     setLoading(false);
   }, [user]);
 
