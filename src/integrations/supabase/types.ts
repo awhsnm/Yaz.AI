@@ -1115,7 +1115,7 @@ export type Database = {
         Returns: boolean
       }
       submit_classroom_essay: {
-        Args: { _essay_id: string; _password: string }
+        Args: { _essay_id: string; _password?: string }
         Returns: boolean
       }
       teacher_can_view_student: { Args: { _student: string }; Returns: boolean }
