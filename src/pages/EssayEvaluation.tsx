@@ -188,6 +188,9 @@ const EssayEvaluation = () => {
                     Return to Dashboard
                   </Button>
                 </div>
+                {unusable && (
+                  <p className="font-display text-sm text-warning max-w-xl mx-auto">{unusable}</p>
+                )}
                 {wordCount < 20 && (
                   <p className="font-display text-xs text-muted-foreground">
                     At least 20 words are needed for an AI diagnostic.
