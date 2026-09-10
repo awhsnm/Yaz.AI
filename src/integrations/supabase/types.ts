@@ -79,6 +79,62 @@ export type Database = {
         }
         Relationships: []
       }
+      assignments: {
+        Row: {
+          classroom_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          due_at: string | null
+          id: string
+          instructions: string | null
+          is_archived: boolean
+          is_published: boolean
+          prompt: string | null
+          time_limit_minutes: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          classroom_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          instructions?: string | null
+          is_archived?: boolean
+          is_published?: boolean
+          prompt?: string | null
+          time_limit_minutes?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          classroom_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          instructions?: string | null
+          is_archived?: boolean
+          is_published?: boolean
+          prompt?: string | null
+          time_limit_minutes?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beta_allowlist: {
         Row: {
           created_at: string
@@ -413,6 +469,7 @@ export type Database = {
           ai_feedback: string | null
           ai_feedback_at: string | null
           ai_probability: number | null
+          assignment_id: string | null
           classroom_id: string | null
           coach_questions_used: number
           content: string
@@ -438,6 +495,7 @@ export type Database = {
           ai_feedback?: string | null
           ai_feedback_at?: string | null
           ai_probability?: number | null
+          assignment_id?: string | null
           classroom_id?: string | null
           coach_questions_used?: number
           content?: string
@@ -463,6 +521,7 @@ export type Database = {
           ai_feedback?: string | null
           ai_feedback_at?: string | null
           ai_probability?: number | null
+          assignment_id?: string | null
           classroom_id?: string | null
           coach_questions_used?: number
           content?: string
@@ -482,6 +541,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "essays_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "essays_classroom_id_fkey"
             columns: ["classroom_id"]
@@ -809,7 +875,31 @@ export type Database = {
           name: string
         }[]
       }
+      list_classroom_assignments: {
+        Args: { _code: string }
+        Returns: {
+          classroom_id: string
+          classroom_name: string
+          description: string
+          due_at: string
+          essay_id: string
+          id: string
+          instructions: string
+          is_submitted: boolean
+          prompt: string
+          time_limit_minutes: number
+          title: string
+        }[]
+      }
       record_beta_login: { Args: { _user_agent?: string }; Returns: string }
+      start_assignment_essay: {
+        Args: { _assignment_id: string; _code: string; _subject?: string }
+        Returns: string
+      }
+      student_in_classroom: {
+        Args: { _classroom_id: string; _student?: string }
+        Returns: boolean
+      }
       student_owns_essay: {
         Args: { _essay_id: string; _student: string }
         Returns: boolean
@@ -819,6 +909,10 @@ export type Database = {
         Returns: boolean
       }
       teacher_can_view_student: { Args: { _student: string }; Returns: boolean }
+      teacher_owns_classroom: {
+        Args: { _classroom_id: string; _teacher?: string }
+        Returns: boolean
+      }
       teacher_owns_essay_classroom: {
         Args: { _essay_id: string; _teacher: string }
         Returns: boolean
