@@ -59,9 +59,18 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Detect the working language from the essay topic / subject.
+    const langSample = `${topic ?? ""} ${subject ?? ""}`;
+    const workingLanguage = /[әғқңөұүһі]/i.test(langSample) || /kazakh/i.test(subject ?? "")
+      ? "Kazakh"
+      : /[\u0400-\u04FF]/.test(langSample) || /russian/i.test(subject ?? "")
+        ? "Russian"
+        : "English";
+
     // Build context-aware system message
     const contextParts = [
       SYSTEM_PROMPT,
+      `\n\nWORKING LANGUAGE: ${workingLanguage}. Write every reply in ${workingLanguage}.`,
       `\n\nSTUDENT'S ESSAY TOPIC: "${topic}"`,
       subject ? `\nSUBJECT: ${subject}` : "",
       currentDraft
