@@ -10,6 +10,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface AssignmentRow {
+  id: string;
+  title: string;
+  description: string | null;
+  prompt: string | null;
+  time_limit_minutes: number | null;
+  essay_id: string | null;
+  is_submitted: boolean;
+}
+
 const SUBJECTS = ["English", "Russian Literature", "Kazakh Literature", "General"];
 
 const JoinLesson = () => {
@@ -21,6 +31,8 @@ const JoinLesson = () => {
   const [code, setCode] = useState("");
   const [classroomId, setClassroomId] = useState<string | null>(null);
   const [classroomName, setClassroomName] = useState<string>("");
+  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const [showFreeTopic, setShowFreeTopic] = useState(false);
   const [topic, setTopic] = useState("");
   const [subject, setSubject] = useState("");
   const [error, setError] = useState("");
@@ -35,14 +47,34 @@ const JoinLesson = () => {
     }
     setBusy(true);
     const { data, error: err } = await supabase.rpc("join_classroom_by_code", { _code: trimmed });
-    setBusy(false);
     const room = Array.isArray(data) ? data[0] : null;
     if (err || !room) {
+      setBusy(false);
       setError(t("join.invalid"));
       return;
     }
+    const { data: list } = await supabase.rpc("list_classroom_assignments", { _code: trimmed });
+    setBusy(false);
+    setAssignments((list ?? []) as AssignmentRow[]);
+    setShowFreeTopic((list ?? []).length === 0);
     setClassroomId(room.id);
     setClassroomName(room.name ?? "Lesson");
+  };
+
+  const openAssignment = async (a: AssignmentRow) => {
+    if (a.essay_id) { navigate(`/essay/${a.essay_id}`); return; }
+    setBusy(true);
+    const { data, error: err } = await supabase.rpc("start_assignment_essay", {
+      _assignment_id: a.id,
+      _code: code.trim().toUpperCase(),
+      _subject: "English",
+    });
+    setBusy(false);
+    if (err || !data) {
+      toast({ title: t("join.couldNotStart"), description: err?.message, variant: "destructive" });
+      return;
+    }
+    navigate(`/essay/${data as string}`);
   };
 
   const startEssay = async () => {
@@ -112,9 +144,39 @@ const JoinLesson = () => {
                 {t("join.joined")}: {classroomName}
               </h2>
               <p className="text-center text-sm text-muted-foreground font-display mb-6">
-                {t("join.setTopic")}
+                {assignments.length > 0 ? "Assignments" : t("join.setTopic")}
               </p>
-              <div className="space-y-3">
+
+              {assignments.length > 0 && (
+                <div className="space-y-3 mb-4">
+                  {assignments.map((a) => (
+                    <div key={a.id} className="border border-border rounded-lg p-4">
+                      <p className="font-display font-semibold text-foreground">{a.title}</p>
+                      {(a.description || a.prompt) && (
+                        <p className="text-sm text-muted-foreground font-display mt-1 line-clamp-2">
+                          {a.description || a.prompt}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground font-display mt-2">
+                        {a.is_submitted ? "Submitted" : a.essay_id ? "In progress" : "Not started"}
+                        {a.time_limit_minutes ? ` \u00b7 ${a.time_limit_minutes} min` : ""}
+                      </p>
+                      <Button size="sm" className="w-full mt-3 font-display" disabled={busy}
+                        onClick={() => openAssignment(a)}>
+                        {a.is_submitted ? "View submitted essay" : a.essay_id ? "Continue essay" : "Start essay"}
+                      </Button>
+                    </div>
+                  ))}
+                  {!showFreeTopic && (
+                    <Button variant="ghost" size="sm" className="w-full font-display"
+                      onClick={() => setShowFreeTopic(true)}>
+                      Write on my own topic
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <div className={showFreeTopic ? "space-y-3" : "hidden"}>
                 <div>
                   <Label className="font-display">{t("join.topic")}</Label>
                   <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t("join.topicPh")} />

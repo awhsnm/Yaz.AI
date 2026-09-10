@@ -11,6 +11,8 @@ import StudentWorkspace from "./pages/StudentWorkspace.tsx";
 import JoinLesson from "./pages/JoinLesson.tsx";
 import TeacherDashboard from "./pages/TeacherDashboard.tsx";
 import TeacherReview from "./pages/TeacherReview.tsx";
+import TeacherClassroom from "./pages/TeacherClassroom.tsx";
+import TeacherAssignment from "./pages/TeacherAssignment.tsx";
 import StudentFeedback from "./pages/StudentFeedback.tsx";
 import EssayEvaluation from "./pages/EssayEvaluation.tsx";
 import ResearchPilot from "./pages/ResearchPilot.tsx";
@@ -57,6 +59,8 @@ const App = () => (
               <Route path="/essay/:id" element={<ProtectedRoute role="student"><StudentWorkspace /></ProtectedRoute>} />
               <Route path="/teacher-dashboard" element={<ProtectedRoute role="teacher"><TeacherDashboard /></ProtectedRoute>} />
               <Route path="/review/:id" element={<ProtectedRoute role="teacher"><TeacherReview /></ProtectedRoute>} />
+              <Route path="/classroom/:id" element={<ProtectedRoute role="teacher"><TeacherClassroom /></ProtectedRoute>} />
+              <Route path="/assignment/:id" element={<ProtectedRoute role="teacher"><TeacherAssignment /></ProtectedRoute>} />
               <Route path="/evaluation/:id" element={<ProtectedRoute role="student"><EssayEvaluation /></ProtectedRoute>} />
               <Route path="/feedback/:id" element={<ProtectedRoute role="student"><StudentFeedback /></ProtectedRoute>} />
               {/* Admin-only beta console. */}

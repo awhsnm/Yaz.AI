@@ -58,6 +58,7 @@ const TeacherDashboard = () => {
   const [lessonName, setLessonName] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | "all">("all");
+  const [assignmentCounts, setAssignmentCounts] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -89,6 +90,14 @@ const TeacherDashboard = () => {
     ]);
     const map = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
     setRows((e ?? []).map((r) => ({ ...r, student_name: map.get(r.student_id) ?? null })));
+
+    const { data: asg } = await supabase
+      .from("assignments")
+      .select("id, classroom_id")
+      .in("classroom_id", classroomIds);
+    const counts: Record<string, number> = {};
+    (asg ?? []).forEach((a) => { counts[a.classroom_id] = (counts[a.classroom_id] ?? 0) + 1; });
+    setAssignmentCounts(counts);
     setLoading(false);
   }, [user]);
 
@@ -208,7 +217,9 @@ const TeacherDashboard = () => {
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {classrooms.map((c) => {
-                const liveCount = rows.filter((r) => r.classroom_id === c.id).length;
+                const classEssays = rows.filter((r) => r.classroom_id === c.id);
+                const liveCount = new Set(classEssays.map((r) => r.student_id)).size;
+                const submittedCount = classEssays.filter((r) => r.is_submitted).length;
                 return (
                   <div key={c.id} className={`bg-card border rounded-lg p-4 ${activeFilter === c.id ? "border-primary" : "border-border"}`}>
                     <div className="flex items-start justify-between gap-2">
@@ -224,7 +235,9 @@ const TeacherDashboard = () => {
                       <ShieldCheck className="w-3 h-3" />
                       {t("teacher.exit")}: <span className="font-mono font-semibold text-foreground">{c.exit_password}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground font-display mt-1">{liveCount} {t("teacher.students")}</p>
+                    <p className="text-xs text-muted-foreground font-display mt-1">
+                      {liveCount} {t("teacher.students")} · {assignmentCounts[c.id] ?? 0} assignments · {submittedCount} submitted
+                    </p>
                     <div className="flex items-center gap-2 mt-3">
                       <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
                         navigator.clipboard.writeText(c.access_code);
@@ -240,6 +253,9 @@ const TeacherDashboard = () => {
                         {activeFilter === c.id ? t("teacher.showing") : t("teacher.filter")}
                       </Button>
                     </div>
+                    <Button size="sm" className="w-full h-8 text-xs mt-2" onClick={() => navigate(`/classroom/${c.id}`)}>
+                      Open classroom
+                    </Button>
                   </div>
                 );
               })}
