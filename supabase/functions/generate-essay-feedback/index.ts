@@ -355,6 +355,13 @@ ${numbered}`,
 ESSAY:
 ${numbered}`,
         );
+        const rejectedStudent = rejection(parsed);
+        if (rejectedStudent) {
+          out.student_feedback = null;
+          out.unusable_submission = rejectedStudent;
+          if (errors.length) out.errors = errors;
+          return jsonResponse(out);
+        }
         const working = strList(parsed?.what_is_working_well, 2);
         const next = text(parsed?.next_step_for_revision, 600);
         let question = text(parsed?.revision_question, 300);
