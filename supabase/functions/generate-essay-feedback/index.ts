@@ -289,6 +289,11 @@ AI COACH INTERACTION DATA: ${interactionBlock}
 ESSAY:
 ${numbered}`,
         );
+        const rejected = rejection(parsed);
+        if (rejected) {
+          out.teacher_assessment = null;
+          out.unusable_submission = rejected;
+        } else {
         const trait = (k: string) => {
           const t = (parsed?.[k] ?? {}) as Record<string, unknown>;
           return { score: score(t.score), confidence: conf(t.confidence), rationale: text(t.rationale, 600) };
