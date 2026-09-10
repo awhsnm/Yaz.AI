@@ -106,6 +106,7 @@ const StudentFeedback = () => {
 
         {isClassroom ? (
         <div className="space-y-6">
+          <StudentFeedbackCard essayId={essay.id} isSubmitted={essay.is_submitted} />
           <div>
             <h2 className="font-display font-semibold text-foreground mb-3 flex items-center gap-2"><Award className="w-4 h-4 text-primary" />Grade & Feedback</h2>
             <div className="bg-card border border-border rounded-lg p-5 space-y-3">
