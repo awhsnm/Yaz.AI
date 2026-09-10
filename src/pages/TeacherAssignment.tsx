@@ -16,6 +16,7 @@ interface Row {
   updated_at: string;
   student_name: string | null;
   grade: string | null;
+  linked: boolean;
 }
 
 type Filter = "all" | "in_progress" | "submitted" | "locked";
@@ -47,12 +48,21 @@ const TeacherAssignment = () => {
     setTitle(a.title);
     setClassroomId(a.classroom_id);
 
+    const cols = "id, topic, student_id, content, is_submitted, updated_at, assignment_id";
     const [{ data: e }, { data: profiles }, { data: classEssays }] = await Promise.all([
-      supabase.from("essays").select("id, topic, student_id, content, is_submitted, updated_at").eq("assignment_id", id),
+      supabase.from("essays").select(cols).eq("assignment_id", id),
       supabase.from("profiles").select("id, full_name"),
-      supabase.from("essays").select("student_id").eq("classroom_id", a.classroom_id),
+      // Essays written in this classroom that were never tied to an assignment
+      // (e.g. the student joined with the lesson code and started writing directly).
+      supabase.from("essays").select(cols).eq("classroom_id", a.classroom_id),
     ]);
-    const ids = (e ?? []).map((x) => x.id);
+
+    const linkedRows = e ?? [];
+    const linkedIds = new Set(linkedRows.map((r) => r.id));
+    const looseRows = (classEssays ?? []).filter((r) => !r.assignment_id && !linkedIds.has(r.id));
+    const all = [...linkedRows, ...looseRows];
+
+    const ids = all.map((x) => x.id);
     const { data: evals } = ids.length
       ? await supabase.from("evaluations").select("essay_id, grade").in("essay_id", ids)
       : { data: [] as { essay_id: string; grade: string }[] };
@@ -60,10 +70,16 @@ const TeacherAssignment = () => {
     const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
 
     setEnrolled(new Set((classEssays ?? []).map((r) => r.student_id)).size);
-    setRows((e ?? []).map((r) => ({
-      ...r,
+    setRows(all.map((r) => ({
+      id: r.id,
+      topic: r.topic,
+      student_id: r.student_id,
+      content: r.content,
+      is_submitted: r.is_submitted,
+      updated_at: r.updated_at,
       student_name: nameMap.get(r.student_id) ?? null,
       grade: gradeMap.get(r.id) ?? null,
+      linked: !!r.assignment_id,
     })));
     setLoading(false);
   }, [id]);
@@ -160,6 +176,9 @@ const TeacherAssignment = () => {
                   <Badge variant={r.is_submitted ? "default" : "outline"} className="font-display text-xs">
                     {r.is_submitted ? "Submitted" : "In progress"}
                   </Badge>
+                  {!r.linked && (
+                    <span className="text-xs font-display text-muted-foreground">Lesson code essay</span>
+                  )}
                   {r.grade && <span className="text-xs font-display text-muted-foreground">Grade: {r.grade}</span>}
                 </div>
               </button>
