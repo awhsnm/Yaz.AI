@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BookOpen, Search, FileText, CheckCircle2, Clock, Plus,
-  Copy, KeyRound, Power, ShieldCheck,
+  Copy, KeyRound, Power,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ interface Classroom {
   id: string;
   access_code: string;
   is_active: boolean;
-  exit_password: string | null;
   name: string | null;
   created_at: string;
 }
@@ -40,8 +39,6 @@ interface EssayRow {
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const genCode = () =>
-  Array.from({ length: 6 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
-const genExitPassword = () =>
   Array.from({ length: 6 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
 
 const TeacherDashboard = () => {
@@ -117,13 +114,11 @@ const TeacherDashboard = () => {
     if (!user) return;
     setBusy(true);
     const code = genCode();
-    const exit = genExitPassword();
     const { data, error } = await supabase
       .from("classrooms")
       .insert({
         teacher_id: user.id,
         access_code: code,
-        exit_password: exit,
         name: lessonName.trim() || `Lesson ${new Date().toLocaleDateString()}`,
       })
       .select()
@@ -231,11 +226,7 @@ const TeacherDashboard = () => {
                         {c.is_active ? t("teacher.active") : t("teacher.inactive")}
                       </Badge>
                     </div>
-                    <div className="text-xs text-muted-foreground font-display mt-2 flex items-center gap-2">
-                      <ShieldCheck className="w-3 h-3" />
-                      {t("teacher.exit")}: <span className="font-mono font-semibold text-foreground">{c.exit_password}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-display mt-1">
+                    <p className="text-xs text-muted-foreground font-display mt-2">
                       {liveCount} {t("teacher.students")} · {assignmentCounts[c.id] ?? 0} assignments · {submittedCount} submitted
                     </p>
                     <div className="flex items-center gap-2 mt-3">
