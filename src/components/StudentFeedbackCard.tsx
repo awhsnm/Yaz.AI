@@ -13,7 +13,8 @@ interface Feedback {
 /** Student-facing formative feedback. Never shows scores, traits or process data. */
 const StudentFeedbackCard = ({ essayId, isSubmitted }: Props) => {
   const [data, setData] = useState<Feedback | null>(null);
-  const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
+  const [unusable, setUnusable] = useState<string | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "unavailable" | "unusable">("loading");
 
   const load = useCallback(async () => {
     const { data: row } = await supabase
@@ -38,7 +39,13 @@ const StudentFeedbackCard = ({ essayId, isSubmitted }: Props) => {
         body: { essay_id: essayId, output_type: "student_feedback" },
       });
       if (cancelled) return;
-      const fb = (res as { student_feedback?: Feedback } | null)?.student_feedback;
+      const payload = res as { student_feedback?: Feedback; unusable_submission?: { message?: string } } | null;
+      if (payload?.unusable_submission) {
+        setUnusable(payload.unusable_submission.message ?? null);
+        setState("unusable");
+        return;
+      }
+      const fb = payload?.student_feedback;
       if (fb && (fb.what_is_working_well?.length || fb.next_step_for_revision)) {
         setData(fb);
         setState("ready");
@@ -50,6 +57,7 @@ const StudentFeedbackCard = ({ essayId, isSubmitted }: Props) => {
   }, [essayId, isSubmitted, load]);
 
   if (!isSubmitted) return null;
+
 
   return (
     <div className="bg-card border border-border rounded-lg p-5 space-y-4">
