@@ -30,6 +30,7 @@ RULES
 
 Return ONLY valid JSON of this exact shape, no prose, no markdown, no code fences:
 {
+  "is_valid_essay": true,
   "total": 0,
   "band": "...",
   "criteria": [
