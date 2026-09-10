@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, enforceRateLimit, jsonResponse, requireUser, sanitizeUserText } from "../_shared/security.ts";
+import { rejection, VALIDITY_RULES } from "../_shared/essay-validity.ts";
 
 const MODEL = "google/gemini-3.6-flash";
-const PROMPT_VERSION = "v1-2026-09";
+const PROMPT_VERSION = "v2-validity-2026-09";
 
 const TEACHER_SYSTEM_PROMPT = `You are an AI assistant that prepares a provisional assessment brief for a teacher reviewing an upper-secondary student's argumentative essay.
 The student may be writing English as an additional language.
