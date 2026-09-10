@@ -56,15 +56,46 @@ export function violatesTone(text: string): boolean {
   return findToneViolations(text).length > 0;
 }
 
+export type TutorLang = "en" | "ru" | "kk";
+
+/** Kazakh-specific Cyrillic letters. */
+const KK_LETTERS = /[әғқңөұүһі]/i;
+
+/**
+ * Detect the working language from the essay topic (and optional subject).
+ * Cyrillic text with Kazakh-specific letters -> kk, other Cyrillic -> ru.
+ */
+export function detectTopicLanguage(topic: string, subject?: string): TutorLang {
+  const text = `${topic ?? ""} ${subject ?? ""}`;
+  if (KK_LETTERS.test(text)) return "kk";
+  if (/[\u0400-\u04FF]/.test(text)) return "ru";
+  if (/kazakh/i.test(subject ?? "")) return "kk";
+  if (/russian/i.test(subject ?? "")) return "ru";
+  return "en";
+}
+
+export const LANGUAGE_NAMES: Record<TutorLang, string> = {
+  en: "English",
+  ru: "Russian",
+  kk: "Kazakh",
+};
+
 /**
  * The tutor's opening message: a single direct question about the student's
- * claim, with no greeting, preamble, or menu.
+ * claim, with no greeting, preamble, or menu — in the topic's language.
  */
-export function buildOpeningQuestion(topic: string, _subject?: string): string {
+export function buildOpeningQuestion(topic: string, subject?: string): string {
   const cleaned = topic
     .trim()
     .replace(/^(why|how|what|should|is|are|do|does)\s+/i, "")
     .replace(/[.?!]+$/, "");
+  const lang = detectTopicLanguage(topic, subject);
+  if (lang === "ru") {
+    return `Какое конкретное утверждение вы будете доказывать по теме «${cleaned || "этой теме"}»?`;
+  }
+  if (lang === "kk") {
+    return `«${cleaned || "осы тақырып"}» бойынша эссеңіз қандай нақты тұжырым жасайды?`;
+  }
   return `What specific claim will your essay make about ${cleaned || "this topic"}?`;
 }
 
