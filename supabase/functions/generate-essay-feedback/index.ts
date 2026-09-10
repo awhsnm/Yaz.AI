@@ -34,7 +34,8 @@ Scores are integers 1-6, or null when there is not enough evidence to judge fair
 Base every statement about AI-coach interaction ONLY on the factual interaction data supplied. If no interaction data is supplied, use "Insufficient data" or "No observable engagement" and say the system cannot infer causation.
 
 Return strict JSON only, of this exact shape:
-{"assessment_confidence":"High | Medium | Low",
+{"is_valid_essay":true,
+"assessment_confidence":"High | Medium | Low",
 "ideas_reasoning":{"score":1,"confidence":"High | Medium | Low","rationale":"..."},
 "organization":{"score":1,"confidence":"High | Medium | Low","rationale":"..."},
 "voice":{"score":1,"confidence":"High | Medium | Low","rationale":"..."},
