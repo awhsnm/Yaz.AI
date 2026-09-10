@@ -74,14 +74,13 @@ const TeacherAssignment = () => {
 
   const visible = useMemo(() => {
     const term = q.trim().toLowerCase();
-    let list = rows.filter((r) => {
+    const list = rows.filter((r) => {
       if (filter === "submitted" && !r.is_submitted) return false;
       if (filter === "locked" && !r.is_submitted) return false;
       if (filter === "in_progress" && r.is_submitted) return false;
       if (!term) return true;
       return (r.student_name ?? "").toLowerCase().includes(term) || r.topic.toLowerCase().includes(term);
     });
-    if (filter === "not_started" as Filter) list = [];
     const sorted = [...list];
     sorted.sort((a, b) => {
       switch (sort) {
