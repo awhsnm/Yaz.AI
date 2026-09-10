@@ -359,6 +359,7 @@ ${numbered}`,
         if (rejectedStudent) {
           out.student_feedback = null;
           out.unusable_submission = rejectedStudent;
+          if (isStudentAuthor && !isTeacher && !isAdmin) out.teacher_assessment = null;
           if (errors.length) out.errors = errors;
           return jsonResponse(out);
         }
