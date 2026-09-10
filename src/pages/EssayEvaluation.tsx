@@ -64,12 +64,19 @@ const EssayEvaluation = () => {
   const runEvaluation = async (text: string) => {
     if (!essay) return;
     setRunning(true);
+    setUnusable(null);
     try {
       const { data, error } = await supabase.functions.invoke("evaluate-essay", {
         body: { topic: essay.topic, subject: essay.subject, content: text },
       });
       if (error) throw new Error((data as { error?: string } | null)?.error || error.message);
       if ((data as { error?: string } | null)?.error) throw new Error((data as { error: string }).error);
+      const payload = data as { is_valid_essay?: boolean; message?: string };
+      if (payload?.is_valid_essay === false) {
+        setUnusable(payload.message ?? "This draft cannot be evaluated as an essay.");
+        setEvaluation(null);
+        return;
+      }
       setPrevious(evaluation?.total ?? null);
       setEvaluation(data as Evaluation);
       await supabase
