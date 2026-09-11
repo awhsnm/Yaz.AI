@@ -226,11 +226,12 @@ const Auth = () => {
                 )}
 
                 {signupRole === "teacher" && (
-                  <motion.div
+                  <motion.form
                     key="teacher"
                     initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -12 }}
+                    onSubmit={handleSignup}
                     className="space-y-3"
                   >
                     <button
@@ -241,30 +242,27 @@ const Auth = () => {
                       <ArrowLeft className="w-3.5 h-3.5" />
                       {t("auth.changeRole")}
                     </button>
-                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                      <div className="flex items-start gap-3">
-                        <Building2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{t("auth.schoolManagedTitle")}</p>
-                          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{t("auth.schoolManagedBody")}</p>
-                        </div>
-                      </div>
+                    <h2 className="text-base font-semibold font-display text-foreground">{t("auth.roleTeacherTitle")}</h2>
+                    <div>
+                      <Label htmlFor="tu-name">{t("auth.fullName")}</Label>
+                      <Input id="tu-name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">{t("auth.haveCredentials")}</p>
-                      <Button className="w-full" onClick={() => { setSignupRole(null); setTab("login"); }}>
-                        <Lock className="w-4 h-4 mr-2" />
-                        {t("auth.goTeacherLogin")}
-                      </Button>
+                    <div>
+                      <Label htmlFor="tu-email">{t("auth.email")}</Label>
+                      <Input id="tu-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                     </div>
-                    <div className="space-y-2 pt-1">
-                      <p className="text-xs text-muted-foreground">{t("auth.wantIntroduce")}</p>
-                      <Button variant="outline" className="w-full" onClick={() => setSchoolOpen(true)}>
-                        <Mail className="w-4 h-4 mr-2" />
-                        {t("auth.requestAccess")}
-                      </Button>
+                    <div>
+                      <Label htmlFor="tu-pw">{t("auth.password")}</Label>
+                      <Input id="tu-pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
-                  </motion.div>
+                    <div className="flex items-start gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
+                      <School className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("auth.roleTeacherDesc")}</p>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={busy}>
+                      {busy ? t("auth.creating") : t("auth.createAccount")}
+                    </Button>
+                  </motion.form>
                 )}
               </AnimatePresence>
             </TabsContent>
