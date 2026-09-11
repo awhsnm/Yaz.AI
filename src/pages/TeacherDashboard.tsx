@@ -270,6 +270,23 @@ const TeacherDashboard = () => {
           )}
         </section>
 
+        {shared.length > 0 && (
+          <section>
+            <h2 className="font-display font-bold text-foreground mb-4">Shared with me</h2>
+            <div className="grid gap-3 md:grid-cols-2">
+              {shared.map((a) => (
+                <button key={a.id} onClick={() => navigate(`/assignment/${a.id}`)}
+                  className="bg-card border border-border rounded-lg p-4 text-left hover:border-primary transition-colors">
+                  <h3 className="font-display font-semibold text-foreground truncate">{a.title}</h3>
+                  <p className="text-xs font-display text-muted-foreground mt-1">
+                    <span className="mr-1">🟢</span>Reviewer access · student essays and feedback
+                  </p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Live feed */}
         <section>
           <div className="flex items-center gap-3 mb-4">
