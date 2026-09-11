@@ -181,11 +181,12 @@ const TeacherClassroom = () => {
                         <span>{s.submitted} submitted</span>
                         <span>{s.inProgress} in progress</span>
                         <span>{s.notStarted} not started</span>
-                      </p>
-                    </div>
-                    <Button size="sm" onClick={() => navigate(`/assignment/${a.id}`)}>View essays</Button>
-                  </div>
-                  <div className="flex items-center gap-2 mt-3">
+                       </p>
+                       <div className="mt-2"><SharedBadge collaborators={collabMap[a.id]} /></div>
+                     </div>
+                     <Button size="sm" onClick={() => navigate(`/assignment/${a.id}`)}>View essays</Button>
+                   </div>
+                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openEdit(a)}>
                       <Pencil className="w-3 h-3 mr-1" />Edit
                     </Button>
@@ -194,6 +195,9 @@ const TeacherClassroom = () => {
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => patch(a, { is_archived: !a.is_archived })}>
                       <Archive className="w-3 h-3 mr-1" />{a.is_archived ? "Unarchive" : "Archive"}
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setCollabFor(a.id)}>
+                      <UserPlus className="w-3 h-3 mr-1" />Manage collaborators
                     </Button>
                   </div>
                 </div>
