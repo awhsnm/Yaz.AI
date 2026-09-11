@@ -253,7 +253,17 @@ const TeacherClassroom = () => {
                 onChange={(e) => setForm({ ...form, time_limit_minutes: Number(e.target.value) })} />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {editing && (
+              <Button
+                type="button"
+                variant="outline"
+                className="sm:mr-auto"
+                onClick={() => { setOpen(false); setCollabFor(editing.id); }}
+              >
+                <UserPlus className="w-4 h-4 mr-2" />Manage collaborators
+              </Button>
+            )}
             <Button onClick={save} disabled={busy || !form.title.trim()}>{editing ? "Save changes" : "Create assignment"}</Button>
           </DialogFooter>
         </DialogContent>
