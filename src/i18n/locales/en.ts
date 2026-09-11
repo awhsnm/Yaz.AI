@@ -176,10 +176,10 @@ const en = {
   },
   exit: {
     title: "Submit Essay",
-    body: "Enter the exit password from your teacher to finalize and submit.",
+    body: "Submit your essay to finish the session. You won't be able to edit it afterwards.",
     pw: "Exit password",
     submit: "Submit Essay",
-    wrong: "Incorrect exit password.",
+    wrong: "Could not submit the essay. Please try again.",
     submitted: "Essay submitted",
   },
   modes: {
@@ -236,7 +236,7 @@ const en = {
       brainstormP3: "Writing practice built around your personal interests",
       classroomLabel: "Classroom Socratic Mode",
       classroomBody: "Guided writing under teacher oversight. Students join with a lesson passcode, write in a locked focus environment, and get Socratic coaching that asks questions instead of writing sentences.",
-      classroomP1: "6-digit lesson codes & exit passcode",
+      classroomP1: "6-digit lesson codes",
       classroomP2: "Live teacher feed",
       classroomP3: "AI coaching guardrails",
       soloLabel: "Solo Exam Practice",
