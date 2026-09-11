@@ -69,6 +69,8 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [data, setData] = useState<Assessment | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data: row } = await supabase
@@ -84,14 +86,29 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
 
   const generate = async (force = false) => {
     setBusy(true);
+    setNotice(null);
+    setFailure(null);
     try {
       const { data: res, error } = await supabase.functions.invoke("generate-essay-feedback", {
         body: { essay_id: essayId, output_type: "both", force },
       });
-      if (error) throw new Error((res as { error?: string } | null)?.error || error.message);
-      if ((res as { error?: string } | null)?.error) throw new Error((res as { error: string }).error);
-      const unusable = (res as { unusable_submission?: { message?: string } } | null)?.unusable_submission;
+      let payload = res as Record<string, unknown> | null;
+      if (error) {
+        // supabase-js hides the response body on non-2xx — read it from the context.
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          payload = await ctx.json().catch(() => null);
+        }
+        throw new Error(
+          (payload?.error as string) ||
+            ((payload?.unusable_submission as { message?: string } | undefined)?.message ?? "") ||
+            error.message,
+        );
+      }
+      if (payload?.error) throw new Error(String(payload.error));
+      const unusable = payload?.unusable_submission as { message?: string } | undefined;
       if (unusable) {
+        setNotice(unusable.message ?? "This submission does not look like an essay.");
         toast({ title: "Not an essay submission", description: unusable.message });
         setBusy(false);
         return;
@@ -99,7 +116,9 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
       await load();
       toast({ title: force ? "Brief regenerated" : "Brief ready" });
     } catch (err) {
-      toast({ title: "Could not prepare the brief", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setFailure(msg);
+      toast({ title: "Could not prepare the brief", description: msg, variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -132,11 +151,24 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
             <p className="text-sm font-display text-muted-foreground">Loading…</p>
           ) : !data ? (
             <div className="space-y-3">
-              <p className="text-sm font-display text-muted-foreground">
-                No brief has been prepared for this essay yet.
-              </p>
+              {notice ? (
+                <div className="rounded-md border border-border bg-muted/40 p-3">
+                  <p className="text-sm font-display font-medium text-foreground mb-1">No brief could be prepared</p>
+                  <p className="text-sm font-display text-muted-foreground">{notice}</p>
+                </div>
+              ) : failure ? (
+                <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                  <p className="text-sm font-display font-medium text-foreground mb-1">The brief could not be prepared</p>
+                  <p className="text-sm font-display text-muted-foreground">{failure}</p>
+                </div>
+              ) : (
+                <p className="text-sm font-display text-muted-foreground">
+                  No brief has been prepared for this essay yet.
+                </p>
+              )}
               <Button onClick={() => generate(false)} disabled={busy} className="font-display">
-                <Sparkles className="w-4 h-4 mr-1" />{busy ? "Preparing…" : "Prepare AI Assessment Brief"}
+                <Sparkles className="w-4 h-4 mr-1" />
+                {busy ? "Preparing…" : notice || failure ? "Try again" : "Prepare AI Assessment Brief"}
               </Button>
             </div>
           ) : (
