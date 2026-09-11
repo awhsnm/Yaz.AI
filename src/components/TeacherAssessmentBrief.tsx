@@ -69,6 +69,8 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [data, setData] = useState<Assessment | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data: row } = await supabase
