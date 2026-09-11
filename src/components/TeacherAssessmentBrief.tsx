@@ -151,11 +151,24 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
             <p className="text-sm font-display text-muted-foreground">Loading…</p>
           ) : !data ? (
             <div className="space-y-3">
-              <p className="text-sm font-display text-muted-foreground">
-                No brief has been prepared for this essay yet.
-              </p>
+              {notice ? (
+                <div className="rounded-md border border-border bg-muted/40 p-3">
+                  <p className="text-sm font-display font-medium text-foreground mb-1">No brief could be prepared</p>
+                  <p className="text-sm font-display text-muted-foreground">{notice}</p>
+                </div>
+              ) : failure ? (
+                <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                  <p className="text-sm font-display font-medium text-foreground mb-1">The brief could not be prepared</p>
+                  <p className="text-sm font-display text-muted-foreground">{failure}</p>
+                </div>
+              ) : (
+                <p className="text-sm font-display text-muted-foreground">
+                  No brief has been prepared for this essay yet.
+                </p>
+              )}
               <Button onClick={() => generate(false)} disabled={busy} className="font-display">
-                <Sparkles className="w-4 h-4 mr-1" />{busy ? "Preparing…" : "Prepare AI Assessment Brief"}
+                <Sparkles className="w-4 h-4 mr-1" />
+                {busy ? "Preparing…" : notice || failure ? "Try again" : "Prepare AI Assessment Brief"}
               </Button>
             </div>
           ) : (
