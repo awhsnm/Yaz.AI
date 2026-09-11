@@ -55,6 +55,9 @@ const TeacherClassroom = () => {
   const [editing, setEditing] = useState<Assignment | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
+  const [collabFor, setCollabFor] = useState<string | null>(null);
+  const assignmentIds = useMemo(() => assignments.map((a) => a.id), [assignments]);
+  const { map: collabMap, reload: reloadCollabs } = useCollaborators(assignmentIds);
 
   const load = useCallback(async () => {
     if (!id) return;
