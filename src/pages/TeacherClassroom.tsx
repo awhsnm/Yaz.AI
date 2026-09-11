@@ -247,6 +247,15 @@ const TeacherClassroom = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {collabFor && (
+        <ManageCollaborators
+          assignmentId={collabFor}
+          open={!!collabFor}
+          onOpenChange={(v) => !v && setCollabFor(null)}
+          onChanged={reloadCollabs}
+        />
+      )}
     </div>
   );
 };
