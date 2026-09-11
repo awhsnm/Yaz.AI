@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Plus, Users, FileText, Archive, Eye, EyeOff, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Users, FileText, Archive, Eye, EyeOff, Pencil, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ManageCollaborators, { SharedBadge, useCollaborators } from "@/components/ManageCollaborators";
 
 interface Assignment {
   id: string;
