@@ -79,6 +79,53 @@ export type Database = {
         }
         Relationships: []
       }
+      assignment_collaborators: {
+        Row: {
+          accepted_at: string | null
+          assignment_id: string
+          collaborator_user_id: string | null
+          id: string
+          invited_at: string
+          invited_by: string
+          invited_email: string
+          revoked_at: string | null
+          role: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          assignment_id: string
+          collaborator_user_id?: string | null
+          id?: string
+          invited_at?: string
+          invited_by: string
+          invited_email: string
+          revoked_at?: string | null
+          role?: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          assignment_id?: string
+          collaborator_user_id?: string | null
+          id?: string
+          invited_at?: string
+          invited_by?: string
+          invited_email?: string
+          revoked_at?: string | null
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_collaborators_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           classroom_id: string
@@ -1038,6 +1085,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_assignment_invitations: { Args: never; Returns: number }
       beta_progress: {
         Args: never
         Returns: {
@@ -1052,6 +1100,10 @@ export type Database = {
           status: string
           submitted_count: number
         }[]
+      }
+      collaborator_can_access_essay: {
+        Args: { _essay_id: string; _user_id?: string }
+        Returns: boolean
       }
       current_user_email: { Args: never; Returns: string }
       ensure_research_participant: {
@@ -1079,6 +1131,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_accepted_assignment_collaborator: {
+        Args: { _assignment_id: string; _user_id?: string }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
       is_beta_active: { Args: { _user_id: string }; Returns: boolean }
       join_classroom_by_code: {
@@ -1104,6 +1160,10 @@ export type Database = {
           time_limit_minutes: number
           title: string
         }[]
+      }
+      owns_assignment: {
+        Args: { _assignment_id: string; _user?: string }
+        Returns: boolean
       }
       record_beta_login: { Args: { _user_agent?: string }; Returns: string }
       start_assignment_essay: {
