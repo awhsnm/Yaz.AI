@@ -37,6 +37,10 @@ const TeacherAssignment = () => {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<Sort>("student");
+  const [isOwner, setIsOwner] = useState(false);
+  const [collabOpen, setCollabOpen] = useState(false);
+  const assignmentIds = useMemo(() => (id ? [id] : []), [id]);
+  const { map: collabMap, reload: reloadCollabs } = useCollaborators(assignmentIds);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -48,6 +52,13 @@ const TeacherAssignment = () => {
     if (!a) { setLoading(false); return; }
     setTitle(a.title);
     setClassroomId(a.classroom_id);
+
+    // Only the classroom owner (or an admin) can read the classroom row,
+    // so this doubles as the owner check for collaborator management.
+    const { data: c } = await supabase
+      .from("classrooms").select("id").eq("id", a.classroom_id).maybeSingle();
+    setIsOwner(!!c);
+
 
     const cols = "id, topic, student_id, content, is_submitted, updated_at, assignment_id";
     const [{ data: e }, { data: profiles }, { data: classEssays }] = await Promise.all([
