@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, GraduationCap, Lock, Building2, School, ArrowLeft, ChevronRight, Mail } from "lucide-react";
+import { BookOpen, GraduationCap, Lock, School, ArrowLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LanguageSelector from "@/components/LanguageSelector";
-import SchoolAccessModal from "@/components/SchoolAccessModal";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +30,6 @@ const Auth = () => {
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("login");
   const [signupRole, setSignupRole] = useState<"student" | "teacher" | null>(null);
-  const [schoolOpen, setSchoolOpen] = useState(false);
 
   const nextPath = safeNext(new URLSearchParams(window.location.search).get("next"));
 
@@ -263,7 +261,6 @@ const Auth = () => {
           </Tabs>
         </div>
       </motion.div>
-      <SchoolAccessModal open={schoolOpen} onOpenChange={setSchoolOpen} />
     </div>
   );
 };
