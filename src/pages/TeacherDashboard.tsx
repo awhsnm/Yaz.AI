@@ -56,9 +56,25 @@ const TeacherDashboard = () => {
   const [busy, setBusy] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | "all">("all");
   const [assignmentCounts, setAssignmentCounts] = useState<Record<string, number>>({});
+  const [shared, setShared] = useState<{ id: string; title: string }[]>([]);
 
   const load = useCallback(async () => {
     if (!user) return;
+
+    // Assignments explicitly shared with this account as an accepted reviewer.
+    const { data: collab } = await supabase
+      .from("assignment_collaborators")
+      .select("assignment_id")
+      .eq("collaborator_user_id", user.id)
+      .eq("status", "accepted");
+    const sharedIds = (collab ?? []).map((r) => r.assignment_id);
+    if (sharedIds.length) {
+      const { data: sa } = await supabase.from("assignments").select("id, title").in("id", sharedIds);
+      setShared((sa ?? []) as { id: string; title: string }[]);
+    } else {
+      setShared([]);
+    }
+
     const { data: c } = await supabase
       .from("classrooms")
       .select("*")
