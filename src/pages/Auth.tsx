@@ -78,7 +78,7 @@ const Auth = () => {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/verify-email`,
-        data: { full_name: fullName },
+        data: { full_name: fullName, role: signupRole ?? "student" },
       },
     });
     setBusy(false);
