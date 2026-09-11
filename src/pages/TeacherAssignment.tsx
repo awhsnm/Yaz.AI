@@ -134,9 +134,16 @@ const TeacherAssignment = () => {
             <p className="text-xs text-muted-foreground font-display">
               {rows.filter((r) => r.is_submitted).length} submitted · {rows.filter((r) => !r.is_submitted).length} in progress · {notStarted} not started
             </p>
+            <div className="mt-1"><SharedBadge collaborators={collabMap[id ?? ""]} /></div>
           </div>
+          {isOwner && (
+            <Button size="sm" variant="outline" className="ml-auto shrink-0" onClick={() => setCollabOpen(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />Manage collaborators
+            </Button>
+          )}
         </div>
       </div>
+
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
