@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Search, FileText } from "lucide-react";
+import { ArrowLeft, Search, FileText, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import ManageCollaborators, { SharedBadge, useCollaborators } from "@/components/ManageCollaborators";
 
 interface Row {
   id: string;
@@ -36,6 +37,10 @@ const TeacherAssignment = () => {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<Sort>("student");
+  const [isOwner, setIsOwner] = useState(false);
+  const [collabOpen, setCollabOpen] = useState(false);
+  const assignmentIds = useMemo(() => (id ? [id] : []), [id]);
+  const { map: collabMap, reload: reloadCollabs } = useCollaborators(assignmentIds);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -47,6 +52,13 @@ const TeacherAssignment = () => {
     if (!a) { setLoading(false); return; }
     setTitle(a.title);
     setClassroomId(a.classroom_id);
+
+    // Only the classroom owner (or an admin) can read the classroom row,
+    // so this doubles as the owner check for collaborator management.
+    const { data: c } = await supabase
+      .from("classrooms").select("id").eq("id", a.classroom_id).maybeSingle();
+    setIsOwner(!!c);
+
 
     const cols = "id, topic, student_id, content, is_submitted, updated_at, assignment_id";
     const [{ data: e }, { data: profiles }, { data: classEssays }] = await Promise.all([
@@ -122,9 +134,16 @@ const TeacherAssignment = () => {
             <p className="text-xs text-muted-foreground font-display">
               {rows.filter((r) => r.is_submitted).length} submitted · {rows.filter((r) => !r.is_submitted).length} in progress · {notStarted} not started
             </p>
+            <div className="mt-1"><SharedBadge collaborators={collabMap[id ?? ""]} /></div>
           </div>
+          {isOwner && (
+            <Button size="sm" variant="outline" className="ml-auto shrink-0" onClick={() => setCollabOpen(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />Manage collaborators
+            </Button>
+          )}
         </div>
       </div>
+
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -186,6 +205,15 @@ const TeacherAssignment = () => {
           </div>
         )}
       </div>
+
+      {id && isOwner && (
+        <ManageCollaborators
+          assignmentId={id}
+          open={collabOpen}
+          onOpenChange={setCollabOpen}
+          onChanged={reloadCollabs}
+        />
+      )}
     </div>
   );
 };

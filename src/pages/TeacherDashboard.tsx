@@ -56,9 +56,25 @@ const TeacherDashboard = () => {
   const [busy, setBusy] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | "all">("all");
   const [assignmentCounts, setAssignmentCounts] = useState<Record<string, number>>({});
+  const [shared, setShared] = useState<{ id: string; title: string }[]>([]);
 
   const load = useCallback(async () => {
     if (!user) return;
+
+    // Assignments explicitly shared with this account as an accepted reviewer.
+    const { data: collab } = await supabase
+      .from("assignment_collaborators")
+      .select("assignment_id")
+      .eq("collaborator_user_id", user.id)
+      .eq("status", "accepted");
+    const sharedIds = (collab ?? []).map((r) => r.assignment_id);
+    if (sharedIds.length) {
+      const { data: sa } = await supabase.from("assignments").select("id, title").in("id", sharedIds);
+      setShared((sa ?? []) as { id: string; title: string }[]);
+    } else {
+      setShared([]);
+    }
+
     const { data: c } = await supabase
       .from("classrooms")
       .select("*")
@@ -253,6 +269,23 @@ const TeacherDashboard = () => {
             </div>
           )}
         </section>
+
+        {shared.length > 0 && (
+          <section>
+            <h2 className="font-display font-bold text-foreground mb-4">Shared with me</h2>
+            <div className="grid gap-3 md:grid-cols-2">
+              {shared.map((a) => (
+                <button key={a.id} onClick={() => navigate(`/assignment/${a.id}`)}
+                  className="bg-card border border-border rounded-lg p-4 text-left hover:border-primary transition-colors">
+                  <h3 className="font-display font-semibold text-foreground truncate">{a.title}</h3>
+                  <p className="text-xs font-display text-muted-foreground mt-1">
+                    <span className="mr-1">🟢</span>Reviewer access · student essays and feedback
+                  </p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Live feed */}
         <section>

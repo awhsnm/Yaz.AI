@@ -42,6 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole((profile?.role as Role) ?? "student");
 
     if (u.email_confirmed_at) {
+      // Accept any assignment collaboration invitations addressed to this
+      // verified email. Matching happens server-side against auth.users.
+      void supabase.rpc("accept_assignment_invitations");
       const { data: status } = await supabase.rpc("record_beta_login", {
         _user_agent: navigator.userAgent.slice(0, 400),
       });
