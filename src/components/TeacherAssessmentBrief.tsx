@@ -86,14 +86,29 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
 
   const generate = async (force = false) => {
     setBusy(true);
+    setNotice(null);
+    setFailure(null);
     try {
       const { data: res, error } = await supabase.functions.invoke("generate-essay-feedback", {
         body: { essay_id: essayId, output_type: "both", force },
       });
-      if (error) throw new Error((res as { error?: string } | null)?.error || error.message);
-      if ((res as { error?: string } | null)?.error) throw new Error((res as { error: string }).error);
-      const unusable = (res as { unusable_submission?: { message?: string } } | null)?.unusable_submission;
+      let payload = res as Record<string, unknown> | null;
+      if (error) {
+        // supabase-js hides the response body on non-2xx — read it from the context.
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          payload = await ctx.json().catch(() => null);
+        }
+        throw new Error(
+          (payload?.error as string) ||
+            ((payload?.unusable_submission as { message?: string } | undefined)?.message ?? "") ||
+            error.message,
+        );
+      }
+      if (payload?.error) throw new Error(String(payload.error));
+      const unusable = payload?.unusable_submission as { message?: string } | undefined;
       if (unusable) {
+        setNotice(unusable.message ?? "This submission does not look like an essay.");
         toast({ title: "Not an essay submission", description: unusable.message });
         setBusy(false);
         return;
@@ -101,7 +116,9 @@ const TeacherAssessmentBrief = ({ essayId, isSubmitted, studentName, classroomNa
       await load();
       toast({ title: force ? "Brief regenerated" : "Brief ready" });
     } catch (err) {
-      toast({ title: "Could not prepare the brief", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setFailure(msg);
+      toast({ title: "Could not prepare the brief", description: msg, variant: "destructive" });
     } finally {
       setBusy(false);
     }
