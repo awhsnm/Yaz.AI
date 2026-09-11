@@ -205,6 +205,15 @@ const TeacherAssignment = () => {
           </div>
         )}
       </div>
+
+      {id && isOwner && (
+        <ManageCollaborators
+          assignmentId={id}
+          open={collabOpen}
+          onOpenChange={setCollabOpen}
+          onChanged={reloadCollabs}
+        />
+      )}
     </div>
   );
 };
