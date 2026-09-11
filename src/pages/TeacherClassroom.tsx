@@ -111,16 +111,27 @@ const TeacherClassroom = () => {
       time_limit_minutes: Number(form.time_limit_minutes) || 45,
       subject: form.subject || "English",
     };
+    let newId: string | null = null;
     const { error } = editing
       ? await supabase.from("assignments").update(payload).eq("id", editing.id)
-      : await supabase.from("assignments").insert({ ...payload, classroom_id: id, created_by: user.id, is_published: true });
+      : await (async () => {
+          const { data, error } = await supabase
+            .from("assignments")
+            .insert({ ...payload, classroom_id: id, created_by: user.id, is_published: true })
+            .select("id")
+            .single();
+          newId = data?.id ?? null;
+          return { error };
+        })();
     setBusy(false);
     if (error) {
       toast({ title: "Could not save assignment", description: error.message, variant: "destructive" });
       return;
     }
     setOpen(false);
-    void load();
+    await load();
+    // After creating a new assignment, offer to invite a collaborator right away.
+    if (!editing && newId) setCollabFor(newId);
   };
 
   const patch = async (a: Assignment, values: Partial<Assignment>) => {
