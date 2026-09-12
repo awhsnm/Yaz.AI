@@ -1105,6 +1105,10 @@ export type Database = {
         Args: { _essay_id: string; _user_id?: string }
         Returns: boolean
       }
+      collaborator_can_view_student: {
+        Args: { _student: string; _user_id?: string }
+        Returns: boolean
+      }
       current_user_email: { Args: never; Returns: string }
       ensure_research_participant: {
         Args: never
