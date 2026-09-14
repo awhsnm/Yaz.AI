@@ -44,6 +44,7 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState<string>("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [teachers, setTeachers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -55,9 +56,14 @@ const StudentDashboard = () => {
         .maybeSingle();
       setFullName(prof?.full_name ?? "");
 
+      const { data: rooms } = await supabase.rpc("my_classrooms");
+      setTeachers(Object.fromEntries(
+        ((rooms ?? []) as { classroom_id: string; teacher_name: string }[]).map((r) => [r.classroom_id, r.teacher_name])
+      ));
+
       const { data } = await supabase
         .from("essays")
-        .select("id, topic, subject, content, is_submitted, updated_at, mode, classroom_id, pinned")
+        .select("id, topic, subject, content, is_submitted, updated_at, mode, classroom_id, pinned, visibility, shared_with_classroom_id, shared_at, submitted_at")
         .eq("student_id", user.id)
         .order("pinned", { ascending: false })
         .order("updated_at", { ascending: false });
