@@ -365,6 +365,33 @@ const TeacherDashboard = () => {
             </span>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {STATUS_TABS.map((s) => (
+              <Button key={s.key} size="sm" variant={statusFilter === s.key ? "default" : "outline"}
+                className="h-7 text-xs font-display" onClick={() => setStatusFilter(s.key)}>
+                {s.label}
+                {s.key !== "all" && (
+                  <span className="ml-1 opacity-70">{rows.filter((r) => r.visibility === s.key).length}</span>
+                )}
+              </Button>
+            ))}
+            {students.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1 ml-auto">
+                <Button size="sm" variant={studentFilter === "all" ? "secondary" : "ghost"}
+                  className="h-7 text-xs font-display" onClick={() => setStudentFilter("all")}>
+                  All students
+                </Button>
+                {students.map(([id, name]) => (
+                  <Button key={id} size="sm" variant={studentFilter === id ? "secondary" : "ghost"}
+                    className="h-7 text-xs font-display" onClick={() => setStudentFilter(id)}>
+                    {name}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+
+
           {loading ? (
             <p className="text-muted-foreground font-display">{t("common.loading")}</p>
           ) : filtered.length === 0 ? (
@@ -389,9 +416,17 @@ const TeacherDashboard = () => {
                         <Badge variant="outline" className="font-display text-xs">{r.subject}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground font-display truncate">{r.topic || "Untitled"}</p>
-                      <p className="text-xs text-muted-foreground font-display mt-1">{wc} {t("common.words")}</p>
+                      {r.assignment_title && (
+                        <p className="text-xs text-primary font-display mt-0.5 truncate">{r.assignment_title}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground font-display mt-1">
+                        {wc} {t("common.words")} · shared {shortDate(r.shared_at)} · submitted {shortDate(r.submitted_at)} · edited {shortDate(r.updated_at)}
+                      </p>
                     </button>
                     <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-display font-medium ${STATUS_STYLE[r.visibility] ?? "bg-muted text-muted-foreground"}`}>
+                        {STATUS_TABS.find((s) => s.key === r.visibility)?.label ?? r.visibility}
+                      </span>
                       <span className="flex items-center gap-1 text-xs font-display">
                         {r.is_submitted ? (
                           <span className="flex items-center gap-1 text-success"><CheckCircle2 className="w-3.5 h-3.5" />{t("teacher.finalized")}</span>
