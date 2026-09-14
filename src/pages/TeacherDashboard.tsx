@@ -34,8 +34,32 @@ interface EssayRow {
   updated_at: string;
   student_id: string;
   classroom_id: string | null;
+  shared_with_classroom_id: string | null;
+  visibility: "private" | "shared" | "submitted" | "returned" | "graded";
+  shared_at: string | null;
+  submitted_at: string | null;
+  assignment_id: string | null;
+  assignment_title?: string | null;
   student_name: string | null;
 }
+
+const STATUS_TABS = [
+  { key: "all", label: "All" },
+  { key: "shared", label: "Shared drafts" },
+  { key: "submitted", label: "Submitted" },
+  { key: "returned", label: "Returned for revision" },
+  { key: "graded", label: "Graded" },
+] as const;
+
+const STATUS_STYLE: Record<string, string> = {
+  shared: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
+  submitted: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+  returned: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  graded: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+};
+
+const shortDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "—";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const genCode = () =>
