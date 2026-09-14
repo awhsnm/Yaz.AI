@@ -81,6 +81,8 @@ const TeacherDashboard = () => {
   const [activeFilter, setActiveFilter] = useState<string | "all">("all");
   const [assignmentCounts, setAssignmentCounts] = useState<Record<string, number>>({});
   const [shared, setShared] = useState<{ id: string; title: string }[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [studentFilter, setStudentFilter] = useState<string>("all");
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -202,7 +204,10 @@ const TeacherDashboard = () => {
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     return rows.filter((r) => {
-      if (activeFilter !== "all" && r.classroom_id !== activeFilter) return false;
+      const room = r.shared_with_classroom_id ?? r.classroom_id;
+      if (activeFilter !== "all" && room !== activeFilter) return false;
+      if (statusFilter !== "all" && r.visibility !== statusFilter) return false;
+      if (studentFilter !== "all" && r.student_id !== studentFilter) return false;
       if (!t) return true;
       return (
         r.topic.toLowerCase().includes(t) ||
@@ -210,7 +215,17 @@ const TeacherDashboard = () => {
         (r.student_name ?? "").toLowerCase().includes(t)
       );
     });
-  }, [rows, q, activeFilter]);
+  }, [rows, q, activeFilter, statusFilter, studentFilter]);
+
+  const students = useMemo(() => {
+    const seen = new Map<string, string>();
+    rows.forEach((r) => {
+      const room = r.shared_with_classroom_id ?? r.classroom_id;
+      if (activeFilter !== "all" && room !== activeFilter) return;
+      seen.set(r.student_id, r.student_name ?? t("teacher.unknown"));
+    });
+    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rows, activeFilter, t]);
 
   return (
     <div className="min-h-screen bg-background">
