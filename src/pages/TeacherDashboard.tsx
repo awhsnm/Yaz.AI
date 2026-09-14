@@ -34,8 +34,32 @@ interface EssayRow {
   updated_at: string;
   student_id: string;
   classroom_id: string | null;
+  shared_with_classroom_id: string | null;
+  visibility: "private" | "shared" | "submitted" | "returned" | "graded";
+  shared_at: string | null;
+  submitted_at: string | null;
+  assignment_id: string | null;
+  assignment_title?: string | null;
   student_name: string | null;
 }
+
+const STATUS_TABS = [
+  { key: "all", label: "All" },
+  { key: "shared", label: "Shared drafts" },
+  { key: "submitted", label: "Submitted" },
+  { key: "returned", label: "Returned for revision" },
+  { key: "graded", label: "Graded" },
+] as const;
+
+const STATUS_STYLE: Record<string, string> = {
+  shared: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
+  submitted: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+  returned: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  graded: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+};
+
+const shortDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "—";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const genCode = () =>
@@ -57,6 +81,8 @@ const TeacherDashboard = () => {
   const [activeFilter, setActiveFilter] = useState<string | "all">("all");
   const [assignmentCounts, setAssignmentCounts] = useState<Record<string, number>>({});
   const [shared, setShared] = useState<{ id: string; title: string }[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [studentFilter, setStudentFilter] = useState<string>("all");
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -92,22 +118,30 @@ const TeacherDashboard = () => {
       return;
     }
 
+    // Private drafts are never fetched: only essays a student actively shared or submitted.
+    const idList = `(${classroomIds.join(",")})`;
     const [{ data: e }, { data: profiles }] = await Promise.all([
       supabase
         .from("essays")
-        .select("id, topic, subject, content, is_submitted, updated_at, student_id, classroom_id")
-        .not("classroom_id", "is", null)
-        .in("classroom_id", classroomIds)
+        .select("id, topic, subject, content, is_submitted, updated_at, student_id, classroom_id, shared_with_classroom_id, visibility, shared_at, submitted_at, assignment_id")
+        .neq("visibility", "private")
+        .or(`classroom_id.in.${idList},shared_with_classroom_id.in.${idList}`)
         .order("updated_at", { ascending: false }),
       supabase.from("profiles").select("id, full_name"),
     ]);
     const map = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
-    setRows((e ?? []).map((r) => ({ ...r, student_name: map.get(r.student_id) ?? null })));
 
     const { data: asg } = await supabase
       .from("assignments")
-      .select("id, classroom_id")
+      .select("id, classroom_id, title")
       .in("classroom_id", classroomIds);
+    const titles = new Map((asg ?? []).map((a) => [a.id, a.title]));
+    setRows((e ?? []).map((r) => ({
+      ...r,
+      student_name: map.get(r.student_id) ?? null,
+      assignment_title: r.assignment_id ? titles.get(r.assignment_id) ?? null : null,
+    })) as EssayRow[]);
+
     const counts: Record<string, number> = {};
     (asg ?? []).forEach((a) => { counts[a.classroom_id] = (counts[a.classroom_id] ?? 0) + 1; });
     setAssignmentCounts(counts);
@@ -170,7 +204,10 @@ const TeacherDashboard = () => {
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     return rows.filter((r) => {
-      if (activeFilter !== "all" && r.classroom_id !== activeFilter) return false;
+      const room = r.shared_with_classroom_id ?? r.classroom_id;
+      if (activeFilter !== "all" && room !== activeFilter) return false;
+      if (statusFilter !== "all" && r.visibility !== statusFilter) return false;
+      if (studentFilter !== "all" && r.student_id !== studentFilter) return false;
       if (!t) return true;
       return (
         r.topic.toLowerCase().includes(t) ||
@@ -178,7 +215,17 @@ const TeacherDashboard = () => {
         (r.student_name ?? "").toLowerCase().includes(t)
       );
     });
-  }, [rows, q, activeFilter]);
+  }, [rows, q, activeFilter, statusFilter, studentFilter]);
+
+  const students = useMemo(() => {
+    const seen = new Map<string, string>();
+    rows.forEach((r) => {
+      const room = r.shared_with_classroom_id ?? r.classroom_id;
+      if (activeFilter !== "all" && room !== activeFilter) return;
+      seen.set(r.student_id, r.student_name ?? t("teacher.unknown"));
+    });
+    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rows, activeFilter, t]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -318,6 +365,33 @@ const TeacherDashboard = () => {
             </span>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {STATUS_TABS.map((s) => (
+              <Button key={s.key} size="sm" variant={statusFilter === s.key ? "default" : "outline"}
+                className="h-7 text-xs font-display" onClick={() => setStatusFilter(s.key)}>
+                {s.label}
+                {s.key !== "all" && (
+                  <span className="ml-1 opacity-70">{rows.filter((r) => r.visibility === s.key).length}</span>
+                )}
+              </Button>
+            ))}
+            {students.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1 ml-auto">
+                <Button size="sm" variant={studentFilter === "all" ? "secondary" : "ghost"}
+                  className="h-7 text-xs font-display" onClick={() => setStudentFilter("all")}>
+                  All students
+                </Button>
+                {students.map(([id, name]) => (
+                  <Button key={id} size="sm" variant={studentFilter === id ? "secondary" : "ghost"}
+                    className="h-7 text-xs font-display" onClick={() => setStudentFilter(id)}>
+                    {name}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+
+
           {loading ? (
             <p className="text-muted-foreground font-display">{t("common.loading")}</p>
           ) : filtered.length === 0 ? (
@@ -342,9 +416,17 @@ const TeacherDashboard = () => {
                         <Badge variant="outline" className="font-display text-xs">{r.subject}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground font-display truncate">{r.topic || "Untitled"}</p>
-                      <p className="text-xs text-muted-foreground font-display mt-1">{wc} {t("common.words")}</p>
+                      {r.assignment_title && (
+                        <p className="text-xs text-primary font-display mt-0.5 truncate">{r.assignment_title}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground font-display mt-1">
+                        {wc} {t("common.words")} · shared {shortDate(r.shared_at)} · submitted {shortDate(r.submitted_at)} · edited {shortDate(r.updated_at)}
+                      </p>
                     </button>
                     <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-display font-medium ${STATUS_STYLE[r.visibility] ?? "bg-muted text-muted-foreground"}`}>
+                        {STATUS_TABS.find((s) => s.key === r.visibility)?.label ?? r.visibility}
+                      </span>
                       <span className="flex items-center gap-1 text-xs font-display">
                         {r.is_submitted ? (
                           <span className="flex items-center gap-1 text-success"><CheckCircle2 className="w-3.5 h-3.5" />{t("teacher.finalized")}</span>

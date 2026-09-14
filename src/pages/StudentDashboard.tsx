@@ -15,6 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { visibilityBadge, type Visibility } from "@/components/EssaySharingMenu";
 
 interface Essay {
   id: string;
@@ -27,6 +28,10 @@ interface Essay {
   classroom_id: string | null;
   pinned: boolean;
   evaluated?: boolean;
+  visibility: Visibility;
+  shared_with_classroom_id: string | null;
+  shared_at: string | null;
+  submitted_at: string | null;
 }
 
 const StudentDashboard = () => {
@@ -39,6 +44,7 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState<string>("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [teachers, setTeachers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -50,9 +56,14 @@ const StudentDashboard = () => {
         .maybeSingle();
       setFullName(prof?.full_name ?? "");
 
+      const { data: rooms } = await supabase.rpc("my_classrooms");
+      setTeachers(Object.fromEntries(
+        ((rooms ?? []) as { classroom_id: string; teacher_name: string }[]).map((r) => [r.classroom_id, r.teacher_name])
+      ));
+
       const { data } = await supabase
         .from("essays")
-        .select("id, topic, subject, content, is_submitted, updated_at, mode, classroom_id, pinned")
+        .select("id, topic, subject, content, is_submitted, updated_at, mode, classroom_id, pinned, visibility, shared_with_classroom_id, shared_at, submitted_at")
         .eq("student_id", user.id)
         .order("pinned", { ascending: false })
         .order("updated_at", { ascending: false });
@@ -191,6 +202,15 @@ const StudentDashboard = () => {
                           <span className="flex items-center gap-1 text-muted-foreground"><Clock className="w-3.5 h-3.5" />{t("dashboard.draft")}</span>
                         )}
                         {e.pinned && <Pin className="w-3 h-3 text-primary fill-primary" />}
+                        {(() => {
+                          const b = visibilityBadge(e, teachers[e.shared_with_classroom_id ?? ""] ?? "your teacher");
+                          const B = b.icon;
+                          return (
+                            <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${b.cls}`} title={b.hint}>
+                              <B className="w-3 h-3" />{b.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <h3 className="font-display font-semibold text-foreground truncate">{e.topic || "Untitled"}</h3>
                       <p className="text-xs text-muted-foreground font-display mt-0.5">

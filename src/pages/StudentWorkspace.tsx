@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import TopicBrief, { TopicBriefData } from "@/components/TopicBrief";
+import EssaySharingMenu, { type SharingState, type Visibility } from "@/components/EssaySharingMenu";
 import { supabase } from "@/integrations/supabase/client";
 
 const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } as const;
@@ -54,6 +55,9 @@ const StudentWorkspace = () => {
   const [remaining, setRemaining] = useState(SESSION_DURATION);
   const [showDiscard, setShowDiscard] = useState(false);
   const [topicBrief, setTopicBrief] = useState<TopicBriefData | null>(null);
+  const [sharing, setSharing] = useState<SharingState>({
+    visibility: "private", shared_with_classroom_id: null, shared_at: null, submitted_at: null,
+  });
   const [showBrief, setShowBrief] = useState(false);
   // --- research mode (additive; false for every existing essay) ---
   const [researchMode, setResearchMode] = useState(false);
@@ -89,6 +93,13 @@ const StudentWorkspace = () => {
       setIsSubmitted(!!e.is_submitted);
       setSoloMode(e.classroom_id == null);
       setMode(((e as { mode?: string }).mode as "classroom" | "solo" | "brainstorm") ?? (e.classroom_id ? "classroom" : "solo"));
+      const row = e as unknown as SharingState;
+      setSharing({
+        visibility: (row.visibility ?? "private") as Visibility,
+        shared_with_classroom_id: row.shared_with_classroom_id ?? null,
+        shared_at: row.shared_at ?? null,
+        submitted_at: row.submitted_at ?? null,
+      });
       const brief = (e as { topic_brief?: unknown }).topic_brief;
       setTopicBrief(brief && typeof brief === "object" ? (brief as TopicBriefData) : null);
       const mins = (e as { duration_minutes?: number | null }).duration_minutes;
@@ -347,6 +358,11 @@ const StudentWorkspace = () => {
             <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-success/15 text-success px-2 py-0.5 text-[10px] font-display font-semibold uppercase tracking-wide">
               {t("workspace.statusSubmitted")}
             </span>
+          )}
+          {!researchMode && essayId && (
+            <div className="ml-2">
+              <EssaySharingMenu essayId={essayId} state={sharing} onChange={setSharing} compact />
+            </div>
           )}
         </div>
 

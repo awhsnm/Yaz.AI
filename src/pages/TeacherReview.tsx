@@ -13,6 +13,7 @@ import ReactMarkdown from "react-markdown";
 import AnnotatedText, { type Annotation } from "@/components/AnnotatedText";
 import WritingPlayback from "@/components/WritingPlayback";
 import TeacherAssessmentBrief from "@/components/TeacherAssessmentBrief";
+import TeacherGradingPanel from "@/components/TeacherGradingPanel";
 
 interface Essay {
   id: string;
@@ -351,6 +352,9 @@ const TeacherReview = () => {
             assignmentTitle={essay.topic}
             onOpenPlayback={() => setPlaybackOpen(true)}
           />
+
+          {/* Additive: rubric grading, return for revision and AI support summary. */}
+          {essay?.id && <TeacherGradingPanel essayId={essay.id} />}
         </div>
 
         {/* Sidebar: comments + chat */}
