@@ -15,6 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { visibilityBadge, type Visibility } from "@/components/EssaySharingMenu";
 
 interface Essay {
   id: string;
@@ -27,6 +28,10 @@ interface Essay {
   classroom_id: string | null;
   pinned: boolean;
   evaluated?: boolean;
+  visibility: Visibility;
+  shared_with_classroom_id: string | null;
+  shared_at: string | null;
+  submitted_at: string | null;
 }
 
 const StudentDashboard = () => {
