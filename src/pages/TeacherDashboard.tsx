@@ -116,22 +116,30 @@ const TeacherDashboard = () => {
       return;
     }
 
+    // Private drafts are never fetched: only essays a student actively shared or submitted.
+    const idList = `(${classroomIds.join(",")})`;
     const [{ data: e }, { data: profiles }] = await Promise.all([
       supabase
         .from("essays")
-        .select("id, topic, subject, content, is_submitted, updated_at, student_id, classroom_id")
-        .not("classroom_id", "is", null)
-        .in("classroom_id", classroomIds)
+        .select("id, topic, subject, content, is_submitted, updated_at, student_id, classroom_id, shared_with_classroom_id, visibility, shared_at, submitted_at, assignment_id")
+        .neq("visibility", "private")
+        .or(`classroom_id.in.${idList},shared_with_classroom_id.in.${idList}`)
         .order("updated_at", { ascending: false }),
       supabase.from("profiles").select("id, full_name"),
     ]);
     const map = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
-    setRows((e ?? []).map((r) => ({ ...r, student_name: map.get(r.student_id) ?? null })));
 
     const { data: asg } = await supabase
       .from("assignments")
-      .select("id, classroom_id")
+      .select("id, classroom_id, title")
       .in("classroom_id", classroomIds);
+    const titles = new Map((asg ?? []).map((a) => [a.id, a.title]));
+    setRows((e ?? []).map((r) => ({
+      ...r,
+      student_name: map.get(r.student_id) ?? null,
+      assignment_title: r.assignment_id ? titles.get(r.assignment_id) ?? null : null,
+    })) as EssayRow[]);
+
     const counts: Record<string, number> = {};
     (asg ?? []).forEach((a) => { counts[a.classroom_id] = (counts[a.classroom_id] ?? 0) + 1; });
     setAssignmentCounts(counts);
