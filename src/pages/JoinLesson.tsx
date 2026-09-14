@@ -47,7 +47,8 @@ const JoinLesson = () => {
       return;
     }
     setBusy(true);
-    const { data, error: err } = await supabase.rpc("join_classroom_by_code", { _code: trimmed });
+    // Enrolls the student in the classroom so they can later share or submit essays to this teacher.
+    const { data, error: err } = await supabase.rpc("enroll_in_classroom", { _code: trimmed });
     const room = Array.isArray(data) ? data[0] : null;
     if (err || !room) {
       setBusy(false);
