@@ -202,6 +202,15 @@ const StudentDashboard = () => {
                           <span className="flex items-center gap-1 text-muted-foreground"><Clock className="w-3.5 h-3.5" />{t("dashboard.draft")}</span>
                         )}
                         {e.pinned && <Pin className="w-3 h-3 text-primary fill-primary" />}
+                        {(() => {
+                          const b = visibilityBadge(e, teachers[e.shared_with_classroom_id ?? ""] ?? "your teacher");
+                          const B = b.icon;
+                          return (
+                            <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${b.cls}`} title={b.hint}>
+                              <B className="w-3 h-3" />{b.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <h3 className="font-display font-semibold text-foreground truncate">{e.topic || "Untitled"}</h3>
                       <p className="text-xs text-muted-foreground font-display mt-0.5">
