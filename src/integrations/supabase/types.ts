@@ -287,6 +287,35 @@ export type Database = {
         }
         Relationships: []
       }
+      classroom_members: {
+        Row: {
+          classroom_id: string
+          id: string
+          joined_at: string
+          student_id: string
+        }
+        Insert: {
+          classroom_id: string
+          id?: string
+          joined_at?: string
+          student_id: string
+        }
+        Update: {
+          classroom_id?: string
+          id?: string
+          joined_at?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classroom_members_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classrooms: {
         Row: {
           access_code: string
@@ -511,6 +540,91 @@ export type Database = {
         }
         Relationships: []
       }
+      essay_activity_log: {
+        Row: {
+          action: string
+          actor_id: string
+          actor_role: string
+          created_at: string
+          detail: string | null
+          essay_id: string
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          actor_role: string
+          created_at?: string
+          detail?: string | null
+          essay_id: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          actor_role?: string
+          created_at?: string
+          detail?: string | null
+          essay_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essay_activity_log_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      essay_rubric_scores: {
+        Row: {
+          comment: string | null
+          created_at: string
+          criterion: string
+          essay_id: string
+          id: string
+          max_score: number
+          position: number
+          score: number | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          criterion: string
+          essay_id: string
+          id?: string
+          max_score?: number
+          position?: number
+          score?: number | null
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          criterion?: string
+          essay_id?: string
+          id?: string
+          max_score?: number
+          position?: number
+          score?: number | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essay_rubric_scores_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       essay_student_feedback: {
         Row: {
           created_at: string
@@ -559,6 +673,59 @@ export type Database = {
             foreignKeyName: "essay_student_feedback_essay_id_fkey"
             columns: ["essay_id"]
             isOneToOne: true
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      essay_submissions: {
+        Row: {
+          ai_questions_shown: number
+          ai_student_responses: number
+          classroom_id: string | null
+          content: string
+          essay_id: string
+          id: string
+          student_id: string
+          subject: string
+          submitted_at: string
+          topic: string
+          version: number
+          word_count: number
+        }
+        Insert: {
+          ai_questions_shown?: number
+          ai_student_responses?: number
+          classroom_id?: string | null
+          content: string
+          essay_id: string
+          id?: string
+          student_id: string
+          subject: string
+          submitted_at?: string
+          topic: string
+          version: number
+          word_count?: number
+        }
+        Update: {
+          ai_questions_shown?: number
+          ai_student_responses?: number
+          classroom_id?: string | null
+          content?: string
+          essay_id?: string
+          id?: string
+          student_id?: string
+          subject?: string
+          submitted_at?: string
+          topic?: string
+          version?: number
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essay_submissions_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
             referencedRelation: "essays"
             referencedColumns: ["id"]
           },
@@ -733,18 +900,25 @@ export type Database = {
           content: string
           created_at: string
           duration_minutes: number | null
+          graded_at: string | null
           id: string
           is_submitted: boolean
           mode: string
           pinned: boolean
           research_mode: boolean
+          returned_at: string | null
           revision_count: number
+          shared_at: string | null
+          shared_with_classroom_id: string | null
           student_id: string
           subject: string
+          submission_version: number
+          submitted_at: string | null
           text_stage: string
           topic: string
           topic_brief: Json | null
           updated_at: string
+          visibility: string
         }
         Insert: {
           ai_checked_at?: string | null
@@ -759,18 +933,25 @@ export type Database = {
           content?: string
           created_at?: string
           duration_minutes?: number | null
+          graded_at?: string | null
           id?: string
           is_submitted?: boolean
           mode?: string
           pinned?: boolean
           research_mode?: boolean
+          returned_at?: string | null
           revision_count?: number
+          shared_at?: string | null
+          shared_with_classroom_id?: string | null
           student_id: string
           subject?: string
+          submission_version?: number
+          submitted_at?: string | null
           text_stage?: string
           topic?: string
           topic_brief?: Json | null
           updated_at?: string
+          visibility?: string
         }
         Update: {
           ai_checked_at?: string | null
@@ -785,18 +966,25 @@ export type Database = {
           content?: string
           created_at?: string
           duration_minutes?: number | null
+          graded_at?: string | null
           id?: string
           is_submitted?: boolean
           mode?: string
           pinned?: boolean
           research_mode?: boolean
+          returned_at?: string | null
           revision_count?: number
+          shared_at?: string | null
+          shared_with_classroom_id?: string | null
           student_id?: string
           subject?: string
+          submission_version?: number
+          submitted_at?: string | null
           text_stage?: string
           topic?: string
           topic_brief?: Json | null
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -809,6 +997,13 @@ export type Database = {
           {
             foreignKeyName: "essays_classroom_id_fkey"
             columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essays_shared_with_classroom_id_fkey"
+            columns: ["shared_with_classroom_id"]
             isOneToOne: false
             referencedRelation: "classrooms"
             referencedColumns: ["id"]
@@ -1110,6 +1305,13 @@ export type Database = {
         Returns: boolean
       }
       current_user_email: { Args: never; Returns: string }
+      enroll_in_classroom: {
+        Args: { _code: string }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       ensure_research_participant: {
         Args: never
         Returns: {
@@ -1141,6 +1343,10 @@ export type Database = {
       }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
       is_beta_active: { Args: { _user_id: string }; Returns: boolean }
+      is_classroom_member: {
+        Args: { _classroom_id: string; _student?: string }
+        Returns: boolean
+      }
       join_classroom_by_code: {
         Args: { _code: string }
         Returns: {
@@ -1165,11 +1371,31 @@ export type Database = {
           title: string
         }[]
       }
+      mark_essay_graded: {
+        Args: { _essay_id: string; _feedback?: string; _grade: string }
+        Returns: string
+      }
+      my_classrooms: {
+        Args: never
+        Returns: {
+          classroom_id: string
+          classroom_name: string
+          teacher_name: string
+        }[]
+      }
       owns_assignment: {
         Args: { _assignment_id: string; _user?: string }
         Returns: boolean
       }
       record_beta_login: { Args: { _user_agent?: string }; Returns: string }
+      return_essay_for_revision: {
+        Args: { _comment?: string; _essay_id: string }
+        Returns: string
+      }
+      share_essay_with_teacher: {
+        Args: { _classroom_id?: string; _essay_id: string }
+        Returns: string
+      }
       start_assignment_essay: {
         Args: { _assignment_id: string; _code: string; _subject?: string }
         Returns: string
@@ -1186,6 +1412,14 @@ export type Database = {
         Args: { _essay_id: string; _password?: string }
         Returns: boolean
       }
+      submit_essay_for_grading: {
+        Args: { _classroom_id?: string; _essay_id: string }
+        Returns: string
+      }
+      teacher_can_access_shared_essay: {
+        Args: { _essay_id: string; _teacher?: string }
+        Returns: boolean
+      }
       teacher_can_view_student: { Args: { _student: string }; Returns: boolean }
       teacher_owns_classroom: {
         Args: { _classroom_id: string; _teacher?: string }
@@ -1195,6 +1429,7 @@ export type Database = {
         Args: { _essay_id: string; _teacher: string }
         Returns: boolean
       }
+      unshare_essay: { Args: { _essay_id: string }; Returns: string }
     }
     Enums: {
       app_role: "teacher" | "student" | "admin"
