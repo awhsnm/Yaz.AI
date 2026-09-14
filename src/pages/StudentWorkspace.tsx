@@ -359,6 +359,11 @@ const StudentWorkspace = () => {
               {t("workspace.statusSubmitted")}
             </span>
           )}
+          {!researchMode && essayId && (
+            <div className="ml-2">
+              <EssaySharingMenu essayId={essayId} state={sharing} onChange={setSharing} compact />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
