@@ -568,6 +568,16 @@ const StudentWorkspace = () => {
       )}
 
 
+      {!researchMode && (
+        <PostSubmissionReflection
+          open={showReflection}
+          required={reflectionRequired}
+          submitting={reflectionSaving}
+          onSubmit={(answers) => saveReflection(answers)}
+          onSkip={() => saveReflection(null)}
+        />
+      )}
+
       <Sheet open={showBrief} onOpenChange={setShowBrief}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader className="mb-4">
