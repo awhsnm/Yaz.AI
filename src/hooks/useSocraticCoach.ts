@@ -193,10 +193,17 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
         usedRef.current = data.questions_used ?? usedRef.current + 1;
         setQuestionsUsed(usedRef.current);
         lastShownAt.current = Date.now();
+        wordsAtLastPrompt.current = countWords(textRef.current);
+        const start = Number.isInteger(data.highlight_start) ? (data.highlight_start as number) : null;
+        const end = Number.isInteger(data.highlight_end) ? (data.highlight_end as number) : null;
+        const valid =
+          start !== null && end !== null && start >= 0 && end > start && end <= textRef.current.length;
         setQuestion({
           interventionId: data.intervention_id,
           question: safeQuestion,
           paragraphIndex: data.paragraph_index ?? 0,
+          highlightStart: valid ? start : null,
+          highlightEnd: valid ? end : null,
         });
       } catch (e) {
         console.error("socratic-coach invoke failed:", e);
