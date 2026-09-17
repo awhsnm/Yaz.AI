@@ -19,5 +19,3 @@ verify_jwt = false
 [functions.generate-essay-feedback]
 verify_jwt = false
 
-[functions.admin-create-users]
-verify_jwt = false
