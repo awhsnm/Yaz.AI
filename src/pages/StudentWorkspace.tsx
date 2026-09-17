@@ -454,6 +454,9 @@ const StudentWorkspace = () => {
               value={essay}
               onChange={(e) => setEssay(e.target.value)}
               onPaste={handlePaste}
+              onBeforeInput={handleBeforeInput}
+              onCompositionStart={() => { composing.current = true; }}
+              onCompositionEnd={() => { composing.current = false; }}
               readOnly={isSubmitted || (researchMode && !consented)}
               placeholder={t("workspace.begin", { topic })}
               className={`w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent focus-editor ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
