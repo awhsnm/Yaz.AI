@@ -125,6 +125,16 @@ const StudentWorkspace = () => {
           .maybeSingle();
         setConsented(!!p?.consented_at);
       }
+      // Reflection can be required per assignment.
+      const assignmentId = (e as { assignment_id?: string | null }).assignment_id ?? null;
+      if (assignmentId && !isResearch) {
+        const { data: a } = await supabase
+          .from("assignments")
+          .select("reflection_required")
+          .eq("id", assignmentId)
+          .maybeSingle();
+        setReflectionRequired(!!(a as { reflection_required?: boolean } | null)?.reflection_required);
+      }
       lastSaved.current = e.content;
       const { data: m } = await supabase
         .from("messages")
