@@ -50,11 +50,14 @@ const EssaySharingMenu = ({
   state,
   onChange,
   compact = false,
+  lessonEssay = false,
 }: {
   essayId: string;
   state: SharingState;
   onChange: (next: SharingState) => void;
   compact?: boolean;
+  /** Lesson (classroom/assignment) work always stays visible to the teacher. */
+  lessonEssay?: boolean;
 }) => {
   const { toast } = useToast();
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
