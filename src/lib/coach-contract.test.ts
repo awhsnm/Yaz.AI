@@ -56,7 +56,7 @@ describe("validateCoachOutput", () => {
     expect(
       ok({
         question:
-          "What evidence do you have that shows clearly and completely why reduced sleep follows directly from social media use every single night?",
+          "What evidence do you have that shows clearly and completely why reduced sleep follows directly from social media use for most teenagers in your school every single night of the week?",
       }).ok,
     ).toBe(false);
   });
