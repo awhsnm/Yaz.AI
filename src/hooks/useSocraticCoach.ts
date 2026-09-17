@@ -154,8 +154,23 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
       if (pausedRef.current) return;
       if (question) return; // a card is already on screen
       if (usedRef.current >= MAX_QUESTIONS) return;
-      if (countWords(textRef.current) < MIN_WORDS) return;
-      if (Date.now() - lastShownAt.current < COOLDOWN_MS) return;
+
+      const wordCount = countWords(textRef.current);
+      // First prompt waits for a substantive paragraph; the second for real development.
+      const required = usedRef.current === 0 ? FIRST_PROMPT_WORDS : SECOND_PROMPT_WORDS;
+      if (usedRef.current < 2 && wordCount < required) return;
+      // The final prompt is reserved for revision or a substantially complete draft.
+      const revisionMoment =
+        trigger === "revision_mode_entered" || trigger === "first_draft_save" || trigger === "paragraph_saved";
+      if (usedRef.current === 2 && !revisionMoment) return;
+      if (lastShownAt.current && Date.now() - lastShownAt.current < COOLDOWN_MS) return;
+      if (
+        usedRef.current > 0 &&
+        wordCount - wordsAtLastPrompt.current < NEW_WORDS_AFTER_PROMPT &&
+        !revisionMoment
+      ) {
+        return;
+      }
 
       analysing.current = true;
       setBusy(true);
