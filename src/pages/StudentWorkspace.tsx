@@ -450,18 +450,33 @@ const StudentWorkspace = () => {
               ? `bg-[${modeAccent.bgLight}] dark:bg-[${modeAccent.bgDark}] border-[${modeAccent.border}]`
               : "bg-background border-transparent"
           }`}>
-            <textarea
-              value={essay}
-              onChange={(e) => setEssay(e.target.value)}
-              onPaste={handlePaste}
-              onBeforeInput={handleBeforeInput}
-              onCompositionStart={() => { composing.current = true; }}
-              onCompositionEnd={() => { composing.current = false; }}
-              readOnly={isSubmitted || (researchMode && !consented)}
-              placeholder={t("workspace.begin", { topic })}
-              className={`w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent focus-editor ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
-              autoFocus
-            />
+            <div className="relative w-full h-full">
+              {/* Reflective pointer: one pale-blue span, no correction, no labels. */}
+              {coach.highlight && (
+                <div
+                  aria-hidden
+                  className={`pointer-events-none absolute inset-0 whitespace-pre-wrap break-words text-transparent leading-normal ${SIZE_CLASS[textSize]}`}
+                >
+                  {essay.slice(0, coach.highlight.start)}
+                  <span className="rounded-sm bg-sky-200/70 dark:bg-sky-400/25">
+                    {essay.slice(coach.highlight.start, coach.highlight.end)}
+                  </span>
+                  {essay.slice(coach.highlight.end)}
+                </div>
+              )}
+              <textarea
+                value={essay}
+                onChange={(e) => setEssay(e.target.value)}
+                onPaste={handlePaste}
+                onBeforeInput={handleBeforeInput}
+                onCompositionStart={() => { composing.current = true; }}
+                onCompositionEnd={() => { composing.current = false; }}
+                readOnly={isSubmitted || (researchMode && !consented)}
+                placeholder={t("workspace.begin", { topic })}
+                className={`relative w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent focus-editor leading-normal ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
+                autoFocus
+              />
+            </div>
           </div>
         </div>
 
