@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import WritingProcessSummary from "@/components/WritingProcessSummary";
 
 interface RubricRow {
   id: string;
@@ -148,6 +149,9 @@ const TeacherGradingPanel = ({ essayId }: { essayId: string }) => {
           </p>
         )}
       </div>
+
+      {/* Process facts (descriptive only) */}
+      <WritingProcessSummary essayId={essayId} />
 
       {/* Rubric */}
       <div className="bg-card border border-border rounded-lg p-5 space-y-3">
