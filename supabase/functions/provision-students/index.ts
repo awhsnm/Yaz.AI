@@ -105,9 +105,16 @@ serve(async (req) => {
       }
 
       // Allowlist entry (active, so the beta gate lets them in immediately).
-      await admin
+      const { data: allowRow } = await admin
         .from("beta_allowlist")
-        .upsert({ email, role, status: "active" }, { onConflict: "email" });
+        .select("id")
+        .ilike("email", email)
+        .maybeSingle();
+      if (allowRow?.id) {
+        await admin.from("beta_allowlist").update({ role, status: "active" }).eq("id", allowRow.id);
+      } else {
+        await admin.from("beta_allowlist").insert({ email, role, status: "active" });
+      }
 
       // Role record.
       await admin.from("user_roles").upsert({ user_id: userId, role }, { onConflict: "user_id,role" });
