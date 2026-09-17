@@ -13,6 +13,7 @@ export type EventKind =
   | "insertion"
   | "deletion"
   | "paste"
+  | "rapid"
   | "save"
   | "submit"
   | "pause";
@@ -67,12 +68,15 @@ export function classify(events: RawWritingEvent[]): AnalysedEvent[] {
     const newParagraph = paragraphs(text) > paragraphs(prevText);
     const marker = (raw.event_type ?? "").toLowerCase();
     const isSubmit = marker.includes("submit");
+    const isClipboard = marker === "paste_clipboard" || (raw.is_paste && marker !== "rapid_input");
+    const isRapid = !isClipboard && marker === "rapid_input";
     const isSave = !isSubmit && (marker.includes("save") || marker.includes("final"));
 
     let kind: EventKind = "typing";
     if (isSubmit) kind = "submit";
     else if (isSave) kind = "save";
-    else if (raw.is_paste) kind = "paste";
+    else if (isClipboard) kind = "paste";
+    else if (isRapid) kind = "rapid";
     else if (gap >= MIN_PAUSE) kind = "pause";
     else if (removed >= MIN_CHARS && removed > added) kind = "deletion";
     else if (added >= MIN_CHARS || newParagraph) kind = "insertion";
@@ -82,7 +86,8 @@ export function classify(events: RawWritingEvent[]): AnalysedEvent[] {
       newParagraph ||
       added >= MIN_CHARS ||
       removed >= MIN_CHARS ||
-      raw.is_paste ||
+      isClipboard ||
+      isRapid ||
       isSave ||
       isSubmit ||
       gap >= MIN_PAUSE;
@@ -95,7 +100,8 @@ export const KIND_LABEL: Record<EventKind, string> = {
   typing: "Typing / minor edit",
   insertion: "Major insertion",
   deletion: "Deletion",
-  paste: "Paste detected",
+  paste: "Pasted from Clipboard",
+  rapid: "Rapid Input / Autocomplete",
   save: "Save",
   submit: "Submit",
   pause: "Long pause",
@@ -107,6 +113,7 @@ export const KIND_COLOR: Record<EventKind, string> = {
   insertion: "bg-primary",
   deletion: "bg-accent-foreground/60",
   paste: "bg-destructive",
+  rapid: "bg-muted-foreground/50",
   save: "bg-secondary-foreground/70",
   submit: "bg-primary/70",
   pause: "bg-muted-foreground/70",
