@@ -34,9 +34,17 @@ const ALLOWED_TRIGGERS = [
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
+const SYSTEM_PROMPT = `${COACH_SYSTEM_PROMPT}
+
+TONE (STRICT)
+No greetings, no self-introduction, no emojis, no exclamation marks.
+No praise, compliments, or motivational language. No capability menus, option lists, or filler preamble.
+
+${ANTI_GHOSTWRITING_RULES}`;
+
 async function callModel(apiKey: string, userContent: string, strictRetry: boolean) {
   const messages = [
-    { role: "system", content: `${COACH_SYSTEM_PROMPT}\n\n${ANTI_GHOSTWRITING_RULES}` },
+    { role: "system", content: SYSTEM_PROMPT },
     ...(strictRetry
       ? [{
           role: "system",
