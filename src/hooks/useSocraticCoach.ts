@@ -352,11 +352,19 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   /** Marks the essay stage as final — called from existing submit flow. */
   const notifySubmitted = useCallback(async () => {
     if (!active) return;
+    setQuestion(null);
     await persistStage("final");
   }, [active, persistStage]);
 
+  // The pale-blue pointer exists only while an unanswered card is on screen.
+  const highlight =
+    question && !snoozed && !paused && question.highlightStart !== null && question.highlightEnd !== null
+      ? { start: question.highlightStart, end: question.highlightEnd }
+      : null;
+
   return {
     active,
+    highlight,
     question,
     snoozed,
     pendingRatingId,
