@@ -39,6 +39,7 @@ const JoinLesson = () => {
   const [subject, setSubject] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingAssignment, setPendingAssignment] = useState<AssignmentRow | null>(null);
 
   const validateCode = async () => {
     setError("");
@@ -62,6 +63,12 @@ const JoinLesson = () => {
     setShowFreeTopic((list ?? []).length === 0);
     setClassroomId(room.id);
     setClassroomName(room.name ?? "Lesson");
+  };
+
+  // New assignment work starts with a short, neutral independence acknowledgement.
+  const requestAssignment = (a: AssignmentRow) => {
+    if (a.essay_id) { navigate(`/essay/${a.essay_id}`); return; }
+    setPendingAssignment(a);
   };
 
   const openAssignment = async (a: AssignmentRow) => {
