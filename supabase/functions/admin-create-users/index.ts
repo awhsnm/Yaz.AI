@@ -27,7 +27,22 @@ Deno.serve(async (req) => {
       email_confirm: true,
       user_metadata: { full_name: u.full_name ?? u.email.split("@")[0], role: u.role ?? "student" },
     });
-    results.push({ email: u.email, id: data?.user?.id ?? null, error: error?.message ?? null });
+    if (!error) {
+      results.push({ email: u.email, id: data?.user?.id ?? null, action: "created" });
+      continue;
+    }
+    // Already registered: reset password and confirm the address instead.
+    const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const existing = list?.users.find((x) => x.email?.toLowerCase() === u.email.toLowerCase());
+    if (!existing) {
+      results.push({ email: u.email, error: error.message });
+      continue;
+    }
+    const { error: upErr } = await admin.auth.admin.updateUserById(existing.id, {
+      password: u.password,
+      email_confirm: true,
+    });
+    results.push({ email: u.email, id: existing.id, action: "updated", error: upErr?.message ?? null });
   }
 
   return new Response(JSON.stringify({ results }), {
