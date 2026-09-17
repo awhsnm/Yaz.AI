@@ -1296,6 +1296,10 @@ export type Database = {
           submitted_count: number
         }[]
       }
+      can_review_essay: {
+        Args: { _essay_id: string; _user?: string }
+        Returns: boolean
+      }
       collaborator_can_access_essay: {
         Args: { _essay_id: string; _user_id?: string }
         Returns: boolean
