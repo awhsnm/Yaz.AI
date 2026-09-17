@@ -22,6 +22,13 @@
       "when": 1789641716367,
       "tag": "0002_scoped_write_policies_members_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789662703350,
+      "tag": "0003_coach_highlights_and_essay_reflections",
+      "breakpoints": true
     }
   ]
 }

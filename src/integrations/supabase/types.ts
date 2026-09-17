@@ -138,6 +138,7 @@ export type Database = {
           is_archived: boolean
           is_published: boolean
           prompt: string | null
+          reflection_required: boolean
           subject: string
           time_limit_minutes: number | null
           title: string
@@ -154,6 +155,7 @@ export type Database = {
           is_archived?: boolean
           is_published?: boolean
           prompt?: string | null
+          reflection_required?: boolean
           subject?: string
           time_limit_minutes?: number | null
           title: string
@@ -170,6 +172,7 @@ export type Database = {
           is_archived?: boolean
           is_published?: boolean
           prompt?: string | null
+          reflection_required?: boolean
           subject?: string
           time_limit_minutes?: number | null
           title?: string
@@ -355,6 +358,8 @@ export type Database = {
           created_at: string
           essay_id: string
           helpfulness_rating: number | null
+          highlight_end: number | null
+          highlight_start: number | null
           id: string
           intervention_version: string | null
           issue_category: string
@@ -382,6 +387,8 @@ export type Database = {
           created_at?: string
           essay_id: string
           helpfulness_rating?: number | null
+          highlight_end?: number | null
+          highlight_start?: number | null
           id?: string
           intervention_version?: string | null
           issue_category?: string
@@ -409,6 +416,8 @@ export type Database = {
           created_at?: string
           essay_id?: string
           helpfulness_rating?: number | null
+          highlight_end?: number | null
+          highlight_start?: number | null
           id?: string
           intervention_version?: string | null
           issue_category?: string
@@ -573,6 +582,50 @@ export type Database = {
             foreignKeyName: "essay_activity_log_essay_id_fkey"
             columns: ["essay_id"]
             isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      essay_reflections: {
+        Row: {
+          argument_decision: string | null
+          created_at: string
+          essay_id: string
+          id: string
+          outside_support: string
+          outside_support_note: string | null
+          revision_note: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          argument_decision?: string | null
+          created_at?: string
+          essay_id: string
+          id?: string
+          outside_support?: string
+          outside_support_note?: string | null
+          revision_note?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          argument_decision?: string | null
+          created_at?: string
+          essay_id?: string
+          id?: string
+          outside_support?: string
+          outside_support_note?: string | null
+          revision_note?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essay_reflections_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: true
             referencedRelation: "essays"
             referencedColumns: ["id"]
           },
