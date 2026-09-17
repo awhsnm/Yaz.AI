@@ -67,7 +67,12 @@ const StudentWorkspace = () => {
   const [questionnaireSaving, setQuestionnaireSaving] = useState(false);
   const lastSaved = useRef("");
   const lastLogged = useRef("");
+  // Verified clipboard insertions only (native paste events).
   const pendingPaste = useRef(0);
+  // Unverified high-speed bursts (45+ chars in <50ms), never IME/autocomplete.
+  const pendingRapid = useRef(false);
+  const lastInputAt = useRef(0);
+  const composing = useRef(false);
 
   // Load essay + messages
   useEffect(() => {
