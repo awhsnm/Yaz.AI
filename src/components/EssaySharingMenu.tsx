@@ -50,11 +50,14 @@ const EssaySharingMenu = ({
   state,
   onChange,
   compact = false,
+  lessonEssay = false,
 }: {
   essayId: string;
   state: SharingState;
   onChange: (next: SharingState) => void;
   compact?: boolean;
+  /** Lesson (classroom/assignment) work always stays visible to the teacher. */
+  lessonEssay?: boolean;
 }) => {
   const { toast } = useToast();
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
@@ -162,9 +165,14 @@ const EssaySharingMenu = ({
             ) : (
               <>
                 {(state.visibility === "private" || state.visibility === "returned") && chooser("share")}
-                {(state.visibility === "shared" || state.visibility === "returned") && (
+                {!lessonEssay && (state.visibility === "shared" || state.visibility === "returned") && (
                   <DropdownMenuItem className="font-display" onClick={() => setPending({ action: "unshare", classroomId: null })}>
                     Stop sharing
+                  </DropdownMenuItem>
+                )}
+                {lessonEssay && (
+                  <DropdownMenuItem disabled className="font-display text-xs">
+                    Lesson work always stays visible to your teacher
                   </DropdownMenuItem>
                 )}
                 {state.visibility !== "submitted" && chooser("submit")}

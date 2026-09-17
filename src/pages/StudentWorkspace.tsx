@@ -361,7 +361,7 @@ const StudentWorkspace = () => {
           )}
           {!researchMode && essayId && (
             <div className="ml-2">
-              <EssaySharingMenu essayId={essayId} state={sharing} onChange={setSharing} compact />
+              <EssaySharingMenu essayId={essayId} state={sharing} onChange={setSharing} compact lessonEssay={!soloMode} />
             </div>
           )}
         </div>
