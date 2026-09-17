@@ -320,9 +320,31 @@ const StudentWorkspace = () => {
     setIsSubmitted(true);
     // Research pilot only: collect the post-writing questionnaire before leaving.
     if (researchMode) { setShowQuestionnaire(true); return; }
+    // Classroom work ends with a short reflection for the teacher.
+    if (mode !== "solo") { setShowReflection(true); return; }
     // Solo Practice ends in the evaluation hub instead of the dashboard.
-    if (mode === "solo") navigate(`/evaluation/${essayId}`);
-    else navigate("/student-dashboard");
+    navigate(`/evaluation/${essayId}`);
+  };
+
+  const saveReflection = async (answers: ReflectionAnswers | null) => {
+    if (!essayId || !user) { navigate("/student-dashboard"); return; }
+    setReflectionSaving(true);
+    if (answers) {
+      await supabase.from("essay_reflections").upsert(
+        {
+          essay_id: essayId,
+          student_id: user.id,
+          argument_decision: answers.argument_decision,
+          revision_note: answers.revision_note,
+          outside_support: answers.outside_support,
+          outside_support_note: answers.outside_support_note || null,
+        },
+        { onConflict: "essay_id" },
+      );
+    }
+    setReflectionSaving(false);
+    setShowReflection(false);
+    navigate("/student-dashboard");
   };
 
   const saveQuestionnaire = async (answers: QuestionnaireAnswers | null) => {
