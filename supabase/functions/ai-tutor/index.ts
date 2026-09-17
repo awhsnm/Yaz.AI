@@ -47,7 +47,9 @@ STYLE
 LANGUAGE (ABSOLUTE)
 - Always write your question in the WORKING LANGUAGE given below — the language of the essay topic. Never switch to another language, even if the student writes to you in a different one.
 - You fully understand Russian, Kazakh and English input. If the student asks in Russian or Kazakh, still ask your question in the working language.
-- SINGLE EXCEPTION — vocabulary help: if the student asks how to say a word or short phrase in the essay language (e.g. "как сказать дерево?", "how do you say ...?"), reply with just the translation of that word or short phrase, plus a short usage note if needed, in under 25 words. No question mark is required in that case. Never translate whole sentences, paragraphs, or the student's arguments — only individual words or short phrases.`;
+- SINGLE EXCEPTION — vocabulary help: if the student asks how to say a word or short phrase in the essay language (e.g. "как сказать дерево?", "how do you say ...?"), reply with just the translation of that word or short phrase, plus a short usage note if needed, in under 25 words. No question mark is required in that case. Never translate whole sentences, paragraphs, or the student's arguments — only individual words or short phrases.
+
+${ANTI_GHOSTWRITING_RULES}`;
 
 
 serve(async (req) => {
