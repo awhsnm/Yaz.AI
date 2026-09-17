@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import IndependentWritingNotice from "@/components/IndependentWritingNotice";
 
 interface AssignmentRow {
   id: string;
@@ -38,6 +39,7 @@ const JoinLesson = () => {
   const [subject, setSubject] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingAssignment, setPendingAssignment] = useState<AssignmentRow | null>(null);
 
   const validateCode = async () => {
     setError("");
@@ -61,6 +63,12 @@ const JoinLesson = () => {
     setShowFreeTopic((list ?? []).length === 0);
     setClassroomId(room.id);
     setClassroomName(room.name ?? "Lesson");
+  };
+
+  // New assignment work starts with a short, neutral independence acknowledgement.
+  const requestAssignment = (a: AssignmentRow) => {
+    if (a.essay_id) { navigate(`/essay/${a.essay_id}`); return; }
+    setPendingAssignment(a);
   };
 
   const openAssignment = async (a: AssignmentRow) => {
@@ -164,7 +172,7 @@ const JoinLesson = () => {
                         {a.time_limit_minutes ? ` \u00b7 ${a.time_limit_minutes} min` : ""}
                       </p>
                       <Button size="sm" className="w-full mt-3 font-display" disabled={busy}
-                        onClick={() => openAssignment(a)}>
+                        onClick={() => requestAssignment(a)}>
                         {a.is_submitted ? "View submitted essay" : a.essay_id ? "Continue essay" : "Start essay"}
                       </Button>
                     </div>
@@ -204,6 +212,17 @@ const JoinLesson = () => {
           )}
         </div>
       </div>
+
+      <IndependentWritingNotice
+        open={!!pendingAssignment}
+        busy={busy}
+        onCancel={() => setPendingAssignment(null)}
+        onAccept={() => {
+          const a = pendingAssignment;
+          setPendingAssignment(null);
+          if (a) openAssignment(a);
+        }}
+      />
     </div>
   );
 };

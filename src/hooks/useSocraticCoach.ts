@@ -21,10 +21,15 @@ export interface CoachQuestion {
   interventionId: string;
   question: string;
   paragraphIndex: number;
+  highlightStart: number | null;
+  highlightEnd: number | null;
 }
 
-const MIN_WORDS = 100;
-const MAX_QUESTIONS = 5;
+/** Pacing policy for short argumentative essays (mirrored server-side). */
+const FIRST_PROMPT_WORDS = 80;
+const SECOND_PROMPT_WORDS = 160;
+const MAX_QUESTIONS = 3;
+const NEW_WORDS_AFTER_PROMPT = 50;
 const PAUSE_MS = 8000; // typing pause after a paragraph boundary
 const COOLDOWN_MS = 90000; // minimum gap between shown questions
 const SNOOZE_MS = 180000; // "Not now" hides the card for 3 minutes
@@ -57,6 +62,7 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   const pausedRef = useRef(paused);
   const usedRef = useRef(0);
   const lastShownAt = useRef(0);
+  const wordsAtLastPrompt = useRef(0);
   const lastSavedBaseline = useRef<string | null>(null);
   const hasSavedOnce = useRef(false);
   const participantId = useRef<string | null>(null);
@@ -148,8 +154,23 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
       if (pausedRef.current) return;
       if (question) return; // a card is already on screen
       if (usedRef.current >= MAX_QUESTIONS) return;
-      if (countWords(textRef.current) < MIN_WORDS) return;
-      if (Date.now() - lastShownAt.current < COOLDOWN_MS) return;
+
+      const wordCount = countWords(textRef.current);
+      // First prompt waits for a substantive paragraph; the second for real development.
+      const required = usedRef.current === 0 ? FIRST_PROMPT_WORDS : SECOND_PROMPT_WORDS;
+      if (usedRef.current < 2 && wordCount < required) return;
+      // The final prompt is reserved for revision or a substantially complete draft.
+      const revisionMoment =
+        trigger === "revision_mode_entered" || trigger === "first_draft_save" || trigger === "paragraph_saved";
+      if (usedRef.current === 2 && !revisionMoment) return;
+      if (lastShownAt.current && Date.now() - lastShownAt.current < COOLDOWN_MS) return;
+      if (
+        usedRef.current > 0 &&
+        wordCount - wordsAtLastPrompt.current < NEW_WORDS_AFTER_PROMPT &&
+        !revisionMoment
+      ) {
+        return;
+      }
 
       analysing.current = true;
       setBusy(true);
@@ -172,10 +193,17 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
         usedRef.current = data.questions_used ?? usedRef.current + 1;
         setQuestionsUsed(usedRef.current);
         lastShownAt.current = Date.now();
+        wordsAtLastPrompt.current = countWords(textRef.current);
+        const start = Number.isInteger(data.highlight_start) ? (data.highlight_start as number) : null;
+        const end = Number.isInteger(data.highlight_end) ? (data.highlight_end as number) : null;
+        const valid =
+          start !== null && end !== null && start >= 0 && end > start && end <= textRef.current.length;
         setQuestion({
           interventionId: data.intervention_id,
           question: safeQuestion,
           paragraphIndex: data.paragraph_index ?? 0,
+          highlightStart: valid ? start : null,
+          highlightEnd: valid ? end : null,
         });
       } catch (e) {
         console.error("socratic-coach invoke failed:", e);
@@ -324,11 +352,19 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   /** Marks the essay stage as final — called from existing submit flow. */
   const notifySubmitted = useCallback(async () => {
     if (!active) return;
+    setQuestion(null);
     await persistStage("final");
   }, [active, persistStage]);
 
+  // The pale-blue pointer exists only while an unanswered card is on screen.
+  const highlight =
+    question && !snoozed && !paused && question.highlightStart !== null && question.highlightEnd !== null
+      ? { start: question.highlightStart, end: question.highlightEnd }
+      : null;
+
   return {
     active,
+    highlight,
     question,
     snoozed,
     pendingRatingId,

@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import TopicBrief, { TopicBriefData } from "@/components/TopicBrief";
 import EssaySharingMenu, { type SharingState, type Visibility } from "@/components/EssaySharingMenu";
+import PostSubmissionReflection, { type ReflectionAnswers } from "@/components/PostSubmissionReflection";
 import { supabase } from "@/integrations/supabase/client";
 
 const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } as const;
@@ -65,6 +66,10 @@ const StudentWorkspace = () => {
   const [consentSaving, setConsentSaving] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [questionnaireSaving, setQuestionnaireSaving] = useState(false);
+  // Post-submission reflection (classroom work, non-research).
+  const [showReflection, setShowReflection] = useState(false);
+  const [reflectionRequired, setReflectionRequired] = useState(false);
+  const [reflectionSaving, setReflectionSaving] = useState(false);
   const lastSaved = useRef("");
   const lastLogged = useRef("");
   // Verified clipboard insertions only (native paste events).
@@ -119,6 +124,16 @@ const StudentWorkspace = () => {
           .eq("user_id", user.id)
           .maybeSingle();
         setConsented(!!p?.consented_at);
+      }
+      // Reflection can be required per assignment.
+      const assignmentId = (e as { assignment_id?: string | null }).assignment_id ?? null;
+      if (assignmentId && !isResearch) {
+        const { data: a } = await supabase
+          .from("assignments")
+          .select("reflection_required")
+          .eq("id", assignmentId)
+          .maybeSingle();
+        setReflectionRequired(!!(a as { reflection_required?: boolean } | null)?.reflection_required);
       }
       lastSaved.current = e.content;
       const { data: m } = await supabase
@@ -305,9 +320,31 @@ const StudentWorkspace = () => {
     setIsSubmitted(true);
     // Research pilot only: collect the post-writing questionnaire before leaving.
     if (researchMode) { setShowQuestionnaire(true); return; }
+    // Classroom work ends with a short reflection for the teacher.
+    if (mode !== "solo") { setShowReflection(true); return; }
     // Solo Practice ends in the evaluation hub instead of the dashboard.
-    if (mode === "solo") navigate(`/evaluation/${essayId}`);
-    else navigate("/student-dashboard");
+    navigate(`/evaluation/${essayId}`);
+  };
+
+  const saveReflection = async (answers: ReflectionAnswers | null) => {
+    if (!essayId || !user) { navigate("/student-dashboard"); return; }
+    setReflectionSaving(true);
+    if (answers) {
+      await supabase.from("essay_reflections").upsert(
+        {
+          essay_id: essayId,
+          student_id: user.id,
+          argument_decision: answers.argument_decision,
+          revision_note: answers.revision_note,
+          outside_support: answers.outside_support,
+          outside_support_note: answers.outside_support_note || null,
+        },
+        { onConflict: "essay_id" },
+      );
+    }
+    setReflectionSaving(false);
+    setShowReflection(false);
+    navigate("/student-dashboard");
   };
 
   const saveQuestionnaire = async (answers: QuestionnaireAnswers | null) => {
@@ -450,18 +487,33 @@ const StudentWorkspace = () => {
               ? `bg-[${modeAccent.bgLight}] dark:bg-[${modeAccent.bgDark}] border-[${modeAccent.border}]`
               : "bg-background border-transparent"
           }`}>
-            <textarea
-              value={essay}
-              onChange={(e) => setEssay(e.target.value)}
-              onPaste={handlePaste}
-              onBeforeInput={handleBeforeInput}
-              onCompositionStart={() => { composing.current = true; }}
-              onCompositionEnd={() => { composing.current = false; }}
-              readOnly={isSubmitted || (researchMode && !consented)}
-              placeholder={t("workspace.begin", { topic })}
-              className={`w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent focus-editor ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
-              autoFocus
-            />
+            <div className="relative w-full h-full">
+              {/* Reflective pointer: one pale-blue span, no correction, no labels. */}
+              {coach.highlight && (
+                <div
+                  aria-hidden
+                  className={`pointer-events-none absolute inset-0 whitespace-pre-wrap break-words text-transparent leading-normal ${SIZE_CLASS[textSize]}`}
+                >
+                  {essay.slice(0, coach.highlight.start)}
+                  <span className="rounded-sm bg-sky-200/70 dark:bg-sky-400/25">
+                    {essay.slice(coach.highlight.start, coach.highlight.end)}
+                  </span>
+                  {essay.slice(coach.highlight.end)}
+                </div>
+              )}
+              <textarea
+                value={essay}
+                onChange={(e) => setEssay(e.target.value)}
+                onPaste={handlePaste}
+                onBeforeInput={handleBeforeInput}
+                onCompositionStart={() => { composing.current = true; }}
+                onCompositionEnd={() => { composing.current = false; }}
+                readOnly={isSubmitted || (researchMode && !consented)}
+                placeholder={t("workspace.begin", { topic })}
+                className={`relative w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent focus-editor leading-normal ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
+                autoFocus
+              />
+            </div>
           </div>
         </div>
 
@@ -515,6 +567,16 @@ const StudentWorkspace = () => {
         />
       )}
 
+
+      {!researchMode && (
+        <PostSubmissionReflection
+          open={showReflection}
+          required={reflectionRequired}
+          submitting={reflectionSaving}
+          onSubmit={(answers) => saveReflection(answers)}
+          onSkip={() => saveReflection(null)}
+        />
+      )}
 
       <Sheet open={showBrief} onOpenChange={setShowBrief}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
