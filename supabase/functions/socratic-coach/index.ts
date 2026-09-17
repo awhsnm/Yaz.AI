@@ -125,6 +125,7 @@ export function sanitiseQuestion(q: unknown, draft: string): string | null {
   const lower = question.toLowerCase();
   if (!OPENERS.some((o) => lower.startsWith(o))) return null;
   if (GENERATION_PHRASES.some((p) => lower.includes(p))) return null;
+  if (containsGeneratedText(question)) return null;
 
   // Reject long verbatim spans lifted from the student's own draft (>6 words).
   const draftLower = ` ${draft.toLowerCase().replace(/\s+/g, " ")} `;
