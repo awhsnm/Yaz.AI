@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   const token = req.headers.get("x-setup-token");
-  if (!token || token !== Deno.env.get("SUPABASE_DB_URL")?.slice(-24)) {
+  if (!token || token !== Deno.env.get("SETUP_TOKEN")) {
     return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: cors });
   }
 
