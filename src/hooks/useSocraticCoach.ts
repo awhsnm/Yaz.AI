@@ -62,6 +62,7 @@ export function useSocraticCoach({ essayId, researchMode, text, isSubmitted, ena
   const pausedRef = useRef(paused);
   const usedRef = useRef(0);
   const lastShownAt = useRef(0);
+  const wordsAtLastPrompt = useRef(0);
   const lastSavedBaseline = useRef<string | null>(null);
   const hasSavedOnce = useRef(false);
   const participantId = useRef<string | null>(null);
