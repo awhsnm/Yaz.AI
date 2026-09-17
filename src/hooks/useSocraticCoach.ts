@@ -21,10 +21,15 @@ export interface CoachQuestion {
   interventionId: string;
   question: string;
   paragraphIndex: number;
+  highlightStart: number | null;
+  highlightEnd: number | null;
 }
 
-const MIN_WORDS = 100;
-const MAX_QUESTIONS = 5;
+/** Pacing policy for short argumentative essays (mirrored server-side). */
+const FIRST_PROMPT_WORDS = 80;
+const SECOND_PROMPT_WORDS = 160;
+const MAX_QUESTIONS = 3;
+const NEW_WORDS_AFTER_PROMPT = 50;
 const PAUSE_MS = 8000; // typing pause after a paragraph boundary
 const COOLDOWN_MS = 90000; // minimum gap between shown questions
 const SNOOZE_MS = 180000; // "Not now" hides the card for 3 minutes
