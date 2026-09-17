@@ -32,6 +32,7 @@ const AdminEssays = lazy(() => import("./pages/admin/AdminEssays"));
 const AdminProgress = lazy(() => import("./pages/admin/AdminProgress"));
 const AdminFeedback = lazy(() => import("./pages/admin/AdminFeedback"));
 const AdminHealth = lazy(() => import("./pages/admin/AdminHealth"));
+const AdminRosterInvite = lazy(() => import("./pages/admin/AdminRosterInvite"));
 
 const queryClient = new QueryClient();
 
