@@ -1,0 +1,1 @@
+ALTER TABLE public.writing_events ADD COLUMN IF NOT EXISTS event_type text;

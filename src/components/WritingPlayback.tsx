@@ -22,7 +22,7 @@ const MAX_TRANSITION_MS = 1500;
 const MAX_GAP_MS = 500;
 const GAP_COMPRESSION = 0.1;
 const DELETION_SPEED_MULTIPLIER = 2;
-const LEGEND: EventKind[] = ["typing", "insertion", "deletion", "paste", "save", "submit", "pause"];
+const LEGEND: EventKind[] = ["typing", "insertion", "deletion", "paste", "rapid", "save", "submit", "pause"];
 
 const WritingPlayback = ({
   essayId,
@@ -59,7 +59,7 @@ const WritingPlayback = ({
     (async () => {
       const { data } = await supabase
         .from("writing_events")
-        .select("id, at, snapshot, word_count, chars_added, is_paste")
+        .select("id, at, snapshot, word_count, chars_added, is_paste, event_type")
         .eq("essay_id", essayId)
         .order("at");
       setEvents((data ?? []) as WritingEvent[]);
@@ -78,6 +78,7 @@ const WritingPlayback = ({
   const current = list[Math.min(pos, Math.max(list.length - 1, 0))];
   const previous = pos > 0 ? list[pos - 1] : null;
   const pasteCount = analysed.filter((e) => e.kind === "paste").length;
+  const rapidCount = analysed.filter((e) => e.kind === "rapid").length;
 
   const cancelTransition = useCallback((fullText?: string) => {
     animationRun.current += 1;
@@ -395,7 +396,10 @@ const WritingPlayback = ({
                 ))}
               </div>
               <span className={`text-xs font-display inline-flex items-center gap-1 ml-auto ${pasteCount ? "text-destructive" : "text-muted-foreground"}`}>
-                <ClipboardPaste className="w-3.5 h-3.5" />{pasteCount} paste event{pasteCount === 1 ? "" : "s"}
+                <ClipboardPaste className="w-3.5 h-3.5" />{pasteCount} clipboard paste{pasteCount === 1 ? "" : "s"}
+                {rapidCount > 0 && (
+                  <span className="text-muted-foreground">· {rapidCount} rapid input / autocomplete</span>
+                )}
               </span>
             </div>
 

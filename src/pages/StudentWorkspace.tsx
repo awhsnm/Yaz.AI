@@ -67,7 +67,12 @@ const StudentWorkspace = () => {
   const [questionnaireSaving, setQuestionnaireSaving] = useState(false);
   const lastSaved = useRef("");
   const lastLogged = useRef("");
+  // Verified clipboard insertions only (native paste events).
   const pendingPaste = useRef(0);
+  // Unverified high-speed bursts (45+ chars in <50ms), never IME/autocomplete.
+  const pendingRapid = useRef(false);
+  const lastInputAt = useRef(0);
+  const composing = useRef(false);
 
   // Load essay + messages
   useEffect(() => {
@@ -144,15 +149,20 @@ const StudentWorkspace = () => {
     return () => clearInterval(i);
   }, [essay, essayId, loading, isSubmitted]);
 
-  // Writing playback: log a snapshot every 3s while the text changes
+  // Writing playback: log a snapshot every 1s while the text changes, so fast
+  // typing is recorded as many small events instead of one large diff.
   useEffect(() => {
     if (!essayId || !user || loading || isSubmitted) return;
     const i = setInterval(() => {
       if (essay === lastLogged.current) return;
       const snapshot = essay;
       const added = snapshot.length - lastLogged.current.length;
-      const paste = pendingPaste.current > 0 || added >= 50;
+      // A paste is only ever a verified clipboard event; bursts are recorded
+      // separately and never count against the student.
+      const paste = pendingPaste.current > 0;
+      const rapid = !paste && pendingRapid.current;
       pendingPaste.current = 0;
+      pendingRapid.current = false;
       lastLogged.current = snapshot;
       supabase.from("writing_events").insert({
         essay_id: essayId,
@@ -161,8 +171,9 @@ const StudentWorkspace = () => {
         word_count: snapshot.trim().split(/\s+/).filter(Boolean).length,
         chars_added: added,
         is_paste: paste,
+        event_type: paste ? "paste_clipboard" : rapid ? "rapid_input" : null,
       }).then(() => {});
-    }, 3000);
+    }, 1000);
     return () => clearInterval(i);
   }, [essay, essayId, user, loading, isSubmitted]);
 
@@ -211,10 +222,38 @@ const StudentWorkspace = () => {
         word_count: essay.trim().split(/\s+/).filter(Boolean).length,
         chars_added: e.clipboardData?.getData("text")?.length ?? 0,
         is_paste: true,
+        event_type: "paste_clipboard",
       }).then(() => {});
     }
     toast({ title: t("workspace.pasteOff"), description: t("workspace.pasteHint"), variant: "destructive" });
   }, [toast, t, essay, essayId, user, mode]);
+
+  // Precise per-input tracking. Only a real clipboard event counts as a paste;
+  // IME / autocomplete / prediction input is never flagged.
+  const RAPID_CHARS = 45;
+  const RAPID_MS = 50;
+  const handleBeforeInput = useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
+    const native = e.nativeEvent as InputEvent;
+    const type = native?.inputType ?? "";
+    const now = performance.now();
+    const since = now - lastInputAt.current;
+    lastInputAt.current = now;
+
+    if (type === "insertFromPaste" || type === "insertFromPasteAsQuotation") {
+      pendingPaste.current += native?.data?.length ?? 1;
+      return;
+    }
+    const composition =
+      composing.current ||
+      type === "insertCompositionText" ||
+      type === "insertReplacementText" ||
+      type === "insertFromComposition" ||
+      native?.isComposing === true;
+    if (composition) return;
+
+    const length = native?.data?.length ?? 0;
+    if (length >= RAPID_CHARS && since < RAPID_MS) pendingRapid.current = true;
+  }, []);
 
   const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
@@ -415,6 +454,9 @@ const StudentWorkspace = () => {
               value={essay}
               onChange={(e) => setEssay(e.target.value)}
               onPaste={handlePaste}
+              onBeforeInput={handleBeforeInput}
+              onCompositionStart={() => { composing.current = true; }}
+              onCompositionEnd={() => { composing.current = false; }}
               readOnly={isSubmitted || (researchMode && !consented)}
               placeholder={t("workspace.begin", { topic })}
               className={`w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent focus-editor ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}

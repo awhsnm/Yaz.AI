@@ -1237,6 +1237,7 @@ export type Database = {
           chars_added: number
           created_at: string
           essay_id: string
+          event_type: string | null
           id: string
           is_paste: boolean
           snapshot: string
@@ -1248,6 +1249,7 @@ export type Database = {
           chars_added?: number
           created_at?: string
           essay_id: string
+          event_type?: string | null
           id?: string
           is_paste?: boolean
           snapshot?: string
@@ -1259,6 +1261,7 @@ export type Database = {
           chars_added?: number
           created_at?: string
           essay_id?: string
+          event_type?: string | null
           id?: string
           is_paste?: boolean
           snapshot?: string
