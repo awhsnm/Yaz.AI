@@ -88,6 +88,8 @@ Use clear, natural language a high school student understands; avoid technical o
 Open-ended (starts with What / How / Why / Which / In what way / Where).
 Grounded in the student's actual wording — you may quote at most 6 of their words.
 
+${ANTI_GHOSTWRITING_RULES}
+
 OUTPUT FORMAT
 Return ONLY this JSON object and nothing else:
 {"intervene": true|false, "issue_category": "<category or none>",
