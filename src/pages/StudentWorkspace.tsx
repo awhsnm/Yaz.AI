@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import TopicBrief, { TopicBriefData } from "@/components/TopicBrief";
 import EssaySharingMenu, { type SharingState, type Visibility } from "@/components/EssaySharingMenu";
+import PostSubmissionReflection, { type ReflectionAnswers } from "@/components/PostSubmissionReflection";
 import { supabase } from "@/integrations/supabase/client";
 
 const SIZE_CLASS = { small: "text-base", medium: "text-lg", large: "text-2xl" } as const;
@@ -65,6 +66,10 @@ const StudentWorkspace = () => {
   const [consentSaving, setConsentSaving] = useState(false);
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [questionnaireSaving, setQuestionnaireSaving] = useState(false);
+  // Post-submission reflection (classroom work, non-research).
+  const [showReflection, setShowReflection] = useState(false);
+  const [reflectionRequired, setReflectionRequired] = useState(false);
+  const [reflectionSaving, setReflectionSaving] = useState(false);
   const lastSaved = useRef("");
   const lastLogged = useRef("");
   // Verified clipboard insertions only (native paste events).
