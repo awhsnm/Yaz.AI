@@ -172,7 +172,7 @@ const JoinLesson = () => {
                         {a.time_limit_minutes ? ` \u00b7 ${a.time_limit_minutes} min` : ""}
                       </p>
                       <Button size="sm" className="w-full mt-3 font-display" disabled={busy}
-                        onClick={() => openAssignment(a)}>
+                        onClick={() => requestAssignment(a)}>
                         {a.is_submitted ? "View submitted essay" : a.essay_id ? "Continue essay" : "Start essay"}
                       </Button>
                     </div>
@@ -212,6 +212,17 @@ const JoinLesson = () => {
           )}
         </div>
       </div>
+
+      <IndependentWritingNotice
+        open={!!pendingAssignment}
+        busy={busy}
+        onCancel={() => setPendingAssignment(null)}
+        onAccept={() => {
+          const a = pendingAssignment;
+          setPendingAssignment(null);
+          if (a) openAssignment(a);
+        }}
+      />
     </div>
   );
 };
