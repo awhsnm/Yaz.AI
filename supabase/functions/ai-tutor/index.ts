@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/security.ts";
+import {
+  ANTI_GHOSTWRITING_RULES,
+  containsGeneratedText,
+  deflectionQuestion,
+  type Working,
+} from "../_shared/ghostwriting.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
