@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { enforceRateLimit, sanitizeUserText } from "../_shared/security.ts";
+import { ANTI_GHOSTWRITING_RULES, containsGeneratedText } from "../_shared/ghostwriting.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,6 +88,8 @@ Use clear, natural language a high school student understands; avoid technical o
 Open-ended (starts with What / How / Why / Which / In what way / Where).
 Grounded in the student's actual wording — you may quote at most 6 of their words.
 
+${ANTI_GHOSTWRITING_RULES}
+
 OUTPUT FORMAT
 Return ONLY this JSON object and nothing else:
 {"intervene": true|false, "issue_category": "<category or none>",
@@ -122,6 +125,7 @@ export function sanitiseQuestion(q: unknown, draft: string): string | null {
   const lower = question.toLowerCase();
   if (!OPENERS.some((o) => lower.startsWith(o))) return null;
   if (GENERATION_PHRASES.some((p) => lower.includes(p))) return null;
+  if (containsGeneratedText(question)) return null;
 
   // Reject long verbatim spans lifted from the student's own draft (>6 words).
   const draftLower = ` ${draft.toLowerCase().replace(/\s+/g, " ")} `;

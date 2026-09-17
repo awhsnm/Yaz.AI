@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/security.ts";
+import {
+  ANTI_GHOSTWRITING_RULES,
+  containsGeneratedText,
+  deflectionQuestion,
+  type Working,
+} from "../_shared/ghostwriting.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,7 +47,9 @@ STYLE
 LANGUAGE (ABSOLUTE)
 - Always write your question in the WORKING LANGUAGE given below — the language of the essay topic. Never switch to another language, even if the student writes to you in a different one.
 - You fully understand Russian, Kazakh and English input. If the student asks in Russian or Kazakh, still ask your question in the working language.
-- SINGLE EXCEPTION — vocabulary help: if the student asks how to say a word or short phrase in the essay language (e.g. "как сказать дерево?", "how do you say ...?"), reply with just the translation of that word or short phrase, plus a short usage note if needed, in under 25 words. No question mark is required in that case. Never translate whole sentences, paragraphs, or the student's arguments — only individual words or short phrases.`;
+- SINGLE EXCEPTION — vocabulary help: if the student asks how to say a word or short phrase in the essay language (e.g. "как сказать дерево?", "how do you say ...?"), reply with just the translation of that word or short phrase, plus a short usage note if needed, in under 25 words. No question mark is required in that case. Never translate whole sentences, paragraphs, or the student's arguments — only individual words or short phrases.
+
+${ANTI_GHOSTWRITING_RULES}`;
 
 
 serve(async (req) => {
@@ -78,24 +86,30 @@ serve(async (req) => {
         : "\n\nCURRENT DRAFT: (empty — student hasn't started writing yet)",
     ];
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
+    const baseMessages = [
+      { role: "system", content: contextParts.join("") },
+      ...messages,
+    ];
+
+    const callModel = async (extra?: string) => {
+      const body = {
+        model: "google/gemini-3-flash-preview",
+        messages: extra
+          ? [...baseMessages, { role: "system", content: extra }]
+          : baseMessages,
+        stream: false,
+      };
+      return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: contextParts.join("") },
-            ...messages,
-          ],
-          stream: true,
-        }),
-      }
-    );
+        body: JSON.stringify(body),
+      });
+    };
+
+    let response = await callModel();
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -118,7 +132,40 @@ serve(async (req) => {
       );
     }
 
-    return new Response(response.body, {
+    const readReply = async (r: Response) => {
+      const data = await r.json();
+      return String(data?.choices?.[0]?.message?.content ?? "").trim();
+    };
+
+    let reply = await readReply(response);
+
+    // Server-side guardrail: never let suggested essay text reach the student.
+    if (containsGeneratedText(reply)) {
+      const retry = await callModel(
+        "Your previous reply supplied essay text, an example sentence, a list, or a quoted phrase. " +
+          "That is forbidden. Reply with ONE open-ended Socratic question under 25 words, no quotes, no lists, no suggested wording.",
+      );
+      reply = retry.ok ? await readReply(retry) : "";
+      if (!reply || containsGeneratedText(reply)) {
+        reply = deflectionQuestion(workingLanguage as Working, reply.length);
+      }
+    }
+
+    // Re-emit the validated reply as an SSE stream the client already understands.
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        const chunkSize = 24;
+        for (let i = 0; i < reply.length; i += chunkSize) {
+          const payload = { choices: [{ delta: { content: reply.slice(i, i + chunkSize) } }] };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+        }
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
