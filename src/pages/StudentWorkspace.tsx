@@ -149,15 +149,20 @@ const StudentWorkspace = () => {
     return () => clearInterval(i);
   }, [essay, essayId, loading, isSubmitted]);
 
-  // Writing playback: log a snapshot every 3s while the text changes
+  // Writing playback: log a snapshot every 1s while the text changes, so fast
+  // typing is recorded as many small events instead of one large diff.
   useEffect(() => {
     if (!essayId || !user || loading || isSubmitted) return;
     const i = setInterval(() => {
       if (essay === lastLogged.current) return;
       const snapshot = essay;
       const added = snapshot.length - lastLogged.current.length;
-      const paste = pendingPaste.current > 0 || added >= 50;
+      // A paste is only ever a verified clipboard event; bursts are recorded
+      // separately and never count against the student.
+      const paste = pendingPaste.current > 0;
+      const rapid = !paste && pendingRapid.current;
       pendingPaste.current = 0;
+      pendingRapid.current = false;
       lastLogged.current = snapshot;
       supabase.from("writing_events").insert({
         essay_id: essayId,
@@ -166,8 +171,9 @@ const StudentWorkspace = () => {
         word_count: snapshot.trim().split(/\s+/).filter(Boolean).length,
         chars_added: added,
         is_paste: paste,
+        event_type: paste ? "paste_clipboard" : rapid ? "rapid_input" : null,
       }).then(() => {});
-    }, 3000);
+    }, 1000);
     return () => clearInterval(i);
   }, [essay, essayId, user, loading, isSubmitted]);
 
