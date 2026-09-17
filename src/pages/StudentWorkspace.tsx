@@ -222,10 +222,38 @@ const StudentWorkspace = () => {
         word_count: essay.trim().split(/\s+/).filter(Boolean).length,
         chars_added: e.clipboardData?.getData("text")?.length ?? 0,
         is_paste: true,
+        event_type: "paste_clipboard",
       }).then(() => {});
     }
     toast({ title: t("workspace.pasteOff"), description: t("workspace.pasteHint"), variant: "destructive" });
   }, [toast, t, essay, essayId, user, mode]);
+
+  // Precise per-input tracking. Only a real clipboard event counts as a paste;
+  // IME / autocomplete / prediction input is never flagged.
+  const RAPID_CHARS = 45;
+  const RAPID_MS = 50;
+  const handleBeforeInput = useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
+    const native = e.nativeEvent as InputEvent;
+    const type = native?.inputType ?? "";
+    const now = performance.now();
+    const since = now - lastInputAt.current;
+    lastInputAt.current = now;
+
+    if (type === "insertFromPaste" || type === "insertFromPasteAsQuotation") {
+      pendingPaste.current += native?.data?.length ?? 1;
+      return;
+    }
+    const composition =
+      composing.current ||
+      type === "insertCompositionText" ||
+      type === "insertReplacementText" ||
+      type === "insertFromComposition" ||
+      native?.isComposing === true;
+    if (composition) return;
+
+    const length = native?.data?.length ?? 0;
+    if (length >= RAPID_CHARS && since < RAPID_MS) pendingRapid.current = true;
+  }, []);
 
   const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
