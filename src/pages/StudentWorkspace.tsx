@@ -78,6 +78,30 @@ const StudentWorkspace = () => {
   const pendingRapid = useRef(false);
   const lastInputAt = useRef(0);
   const composing = useRef(false);
+  // Editor + coach highlight overlay: the overlay must mirror the textarea's scroll
+  // offset, otherwise the pale-blue span drifts onto the wrong words after scrolling.
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const overlayNode = useRef<HTMLDivElement | null>(null);
+  const syncHighlightScroll = useCallback(() => {
+    const ta = editorRef.current;
+    const ov = overlayNode.current;
+    if (!ta || !ov) return;
+    ov.scrollTop = ta.scrollTop;
+    ov.scrollLeft = ta.scrollLeft;
+  }, []);
+  const highlightOverlayRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      overlayNode.current = node;
+      if (node) syncHighlightScroll();
+    },
+    [syncHighlightScroll],
+  );
+
+
+  // Keep the highlight aligned when the text or text size changes.
+  useEffect(() => {
+    syncHighlightScroll();
+  });
 
   // Load essay + messages
   useEffect(() => {
@@ -488,32 +512,39 @@ const StudentWorkspace = () => {
               : "bg-background border-transparent"
           }`}>
             <div className="relative w-full h-full">
-              {/* Reflective pointer: one pale-blue span, no correction, no labels. */}
+              {/* Reflective pointer: one pale-blue span, no correction, no labels.
+                  Shares the textarea's exact typography/box metrics and scroll offset
+                  so the highlight stays on the same words while scrolling. */}
               {coach.highlight && (
                 <div
+                  ref={highlightOverlayRef}
                   aria-hidden
-                  className={`pointer-events-none absolute inset-0 whitespace-pre-wrap break-words text-transparent leading-normal ${SIZE_CLASS[textSize]}`}
+                  className={`pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words text-transparent bg-transparent p-0 m-0 border-0 focus-editor leading-normal ${SIZE_CLASS[textSize]}`}
                 >
                   {essay.slice(0, coach.highlight.start)}
                   <span className="rounded-sm bg-sky-200/70 dark:bg-sky-400/25">
                     {essay.slice(coach.highlight.start, coach.highlight.end)}
                   </span>
                   {essay.slice(coach.highlight.end)}
+                  {"\n"}
                 </div>
               )}
               <textarea
+                ref={editorRef}
                 value={essay}
                 onChange={(e) => setEssay(e.target.value)}
+                onScroll={syncHighlightScroll}
                 onPaste={handlePaste}
                 onBeforeInput={handleBeforeInput}
                 onCompositionStart={() => { composing.current = true; }}
                 onCompositionEnd={() => { composing.current = false; }}
                 readOnly={isSubmitted || (researchMode && !consented)}
                 placeholder={t("workspace.begin", { topic })}
-                className={`relative w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent focus-editor leading-normal ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
+                className={`relative w-full h-full min-h-[calc(100vh-11rem)] resize-none bg-transparent p-0 m-0 border-0 focus-editor leading-normal ${SIZE_CLASS[textSize]} outline-none placeholder:text-muted-foreground/50 ${isSubmitted ? "cursor-not-allowed opacity-90" : ""}`}
                 autoFocus
               />
             </div>
+
           </div>
         </div>
 
