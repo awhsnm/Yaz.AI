@@ -98,6 +98,11 @@ const StudentWorkspace = () => {
   );
 
 
+  // Keep the highlight aligned when the text or text size changes.
+  useEffect(() => {
+    syncHighlightScroll();
+  });
+
   // Load essay + messages
   useEffect(() => {
     if (!essayId || !user) return;
