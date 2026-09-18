@@ -78,6 +78,25 @@ const StudentWorkspace = () => {
   const pendingRapid = useRef(false);
   const lastInputAt = useRef(0);
   const composing = useRef(false);
+  // Editor + coach highlight overlay: the overlay must mirror the textarea's scroll
+  // offset, otherwise the pale-blue span drifts onto the wrong words after scrolling.
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const overlayNode = useRef<HTMLDivElement | null>(null);
+  const syncHighlightScroll = useCallback(() => {
+    const ta = editorRef.current;
+    const ov = overlayNode.current;
+    if (!ta || !ov) return;
+    ov.scrollTop = ta.scrollTop;
+    ov.scrollLeft = ta.scrollLeft;
+  }, []);
+  const highlightOverlayRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      overlayNode.current = node;
+      if (node) syncHighlightScroll();
+    },
+    [syncHighlightScroll],
+  );
+
 
   // Load essay + messages
   useEffect(() => {
