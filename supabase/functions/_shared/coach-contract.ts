@@ -8,23 +8,30 @@
  */
 
 export const COACH_CATEGORIES = [
-  "unclear_or_broad_thesis",
-  "thesis_claim_evidence_conclusion_inconsistency",
   "unsupported_claim",
+  "missing_evidence",
   "evidence_without_link",
-  "hidden_assumption",
-  "missing_or_weak_counterargument",
+  "correlation_vs_causation",
   "overgeneralisation",
+  "vague_language",
+  "missing_explanation",
+  "hidden_assumption",
+  "missing_counterargument",
+  "exception_or_limitation",
+  "logical_jump",
+  "thesis_or_position_tension",
+  "missing_definition",
+  "example_without_explanation",
   "conclusion_mismatch",
-  "surface_only_revision",
+  "revision_alignment",
 ] as const;
 
 export type CoachCategory = (typeof COACH_CATEGORIES)[number];
 
 /** Longest span the coach may point at (one sentence of an upper-secondary essay). */
 export const MAX_HIGHLIGHT_CHARS = 300;
-export const MIN_QUESTION_WORDS = 8;
-export const MAX_QUESTION_WORDS = 25;
+export const MIN_QUESTION_WORDS = 6;
+export const MAX_QUESTION_WORDS = 18;
 
 const ALLOWED_KEYS = [
   "intervene",
