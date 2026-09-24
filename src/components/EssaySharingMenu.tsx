@@ -211,6 +211,24 @@ const EssaySharingMenu = ({
         </DropdownMenu>
       </div>
 
+      <Dialog open={codeOpen} onOpenChange={setCodeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Join your teacher's class</DialogTitle>
+            <DialogDescription className="font-display">
+              Enter the lesson code from your teacher. After joining, you choose whether to share this essay.
+            </DialogDescription>
+          </DialogHeader>
+          <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Lesson code" maxLength={12}
+            onKeyDown={(e) => e.key === "Enter" && joinByCode()} autoFocus />
+          <DialogFooter>
+            <Button onClick={joinByCode} disabled={joining || !code.trim()} className="font-display">
+              {joining ? "Joining…" : "Join class"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
