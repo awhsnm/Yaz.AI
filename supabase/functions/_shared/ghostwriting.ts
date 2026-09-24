@@ -38,8 +38,9 @@ const GENERATION_PHRASES: RegExp[] = [
 
 /** A quoted span of 5+ words looks like a ready-to-paste sentence. */
 function hasQuotedSentence(text: string): boolean {
-  const quoted = text.match(/["“«']([^"”»']{12,})["”»']/g) ?? [];
-  return quoted.some((q) => q.replace(/["“«”»']/g, "").trim().split(/\s+/).filter(Boolean).length >= 5);
+  // Straight apostrophes are excluded: they appear in contractions/possessives.
+  const quoted = text.match(/["“«]([^"“”«»]{12,})["”»]/g) ?? [];
+  return quoted.some((q) => q.replace(/["“«”»]/g, "").trim().split(/\s+/).filter(Boolean).length >= 5);
 }
 
 /** True when the reply hands the student usable essay text. */
