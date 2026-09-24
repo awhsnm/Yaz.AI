@@ -18,6 +18,8 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
+const FEEDBACK_DISMISSED_KEY = "yaz-feedback-dismissed";
+
 const FeedbackButton = () => {
   const { user, betaStatus } = useAuth();
   const { toast } = useToast();
@@ -26,6 +28,25 @@ const FeedbackButton = () => {
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    try {
+      setDismissed(sessionStorage.getItem(FEEDBACK_DISMISSED_KEY) === "1");
+    } catch {
+      setDismissed(false);
+    }
+  }, []);
+
+  const dismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDismissed(true);
+    try {
+      sessionStorage.setItem(FEEDBACK_DISMISSED_KEY, "1");
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   if (!user || betaStatus !== "active") return null;
 
