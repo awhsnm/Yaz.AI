@@ -1,0 +1,1 @@
+CREATE POLICY "Admins view all coach interventions" ON public.coach_interventions FOR SELECT TO authenticated USING (public.is_admin(auth.uid()));
