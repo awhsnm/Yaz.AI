@@ -9,6 +9,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -63,14 +65,36 @@ const EssaySharingMenu = ({
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<null | { action: "share" | "submit" | "unshare"; classroomId: string | null }>(null);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [joining, setJoining] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    supabase.rpc("my_classrooms").then(({ data }) => {
-      if (active) setClassrooms((data ?? []) as ClassroomOption[]);
-    });
-    return () => { active = false; };
+  const loadClassrooms = useCallback(async () => {
+    const { data } = await supabase.rpc("my_classrooms");
+    const list = (data ?? []) as ClassroomOption[];
+    setClassrooms(list);
+    return list;
   }, []);
+
+  useEffect(() => { loadClassrooms(); }, [loadClassrooms]);
+
+  const joinByCode = async () => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    setJoining(true);
+    const { data, error } = await supabase.rpc("enroll_in_classroom", { _code: trimmed });
+    setJoining(false);
+    if (error) {
+      toast({ title: "Could not join", description: "Check the lesson code with your teacher.", variant: "destructive" });
+      return;
+    }
+    const joined = (Array.isArray(data) ? data[0] : data) as { id?: string } | null;
+    await loadClassrooms();
+    setCodeOpen(false);
+    setCode("");
+    toast({ title: "Class joined", description: "You can now share this essay with your teacher." });
+    if (joined?.id) setPending({ action: "share", classroomId: joined.id });
+  };
 
   const current = useMemo(
     () => classrooms.find((c) => c.classroom_id === state.shared_with_classroom_id) ?? classrooms[0] ?? null,
@@ -159,8 +183,8 @@ const EssaySharingMenu = ({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {classrooms.length === 0 ? (
-              <DropdownMenuItem disabled className="font-display">
-                Join a classroom with a lesson code first
+              <DropdownMenuItem className="font-display" onClick={() => setCodeOpen(true)}>
+                Share with teacher — enter lesson code
               </DropdownMenuItem>
             ) : (
               <>
