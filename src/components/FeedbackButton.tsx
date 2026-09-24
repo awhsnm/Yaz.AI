@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { MessageSquarePlus, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MessageSquarePlus, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,8 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
+const FEEDBACK_DISMISSED_KEY = "yaz-feedback-dismissed";
+
 const FeedbackButton = () => {
   const { user, betaStatus } = useAuth();
   const { toast } = useToast();
@@ -26,6 +28,25 @@ const FeedbackButton = () => {
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    try {
+      setDismissed(sessionStorage.getItem(FEEDBACK_DISMISSED_KEY) === "1");
+    } catch {
+      setDismissed(false);
+    }
+  }, []);
+
+  const dismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDismissed(true);
+    try {
+      sessionStorage.setItem(FEEDBACK_DISMISSED_KEY, "1");
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   if (!user || betaStatus !== "active") return null;
 
@@ -78,17 +99,31 @@ const FeedbackButton = () => {
     setOpen(false);
   };
 
+  if (dismissed) return null;
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Send feedback"
-        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg px-4 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
-      >
-        <MessageSquarePlus className="w-4 h-4" />
-        Send Feedback
-      </button>
+      <div className="fixed bottom-5 right-5 z-50">
+        <div className="relative inline-flex items-center">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Send feedback"
+            className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg px-4 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+            Send Feedback
+          </button>
+          <button
+            type="button"
+            onClick={dismiss}
+            aria-label="Hide feedback button"
+            className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm hover:text-foreground transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
