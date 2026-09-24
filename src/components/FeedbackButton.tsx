@@ -99,17 +99,31 @@ const FeedbackButton = () => {
     setOpen(false);
   };
 
+  if (dismissed) return null;
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Send feedback"
-        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg px-4 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
-      >
-        <MessageSquarePlus className="w-4 h-4" />
-        Send Feedback
-      </button>
+      <div className="fixed bottom-5 right-5 z-50">
+        <div className="relative inline-flex items-center">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Send feedback"
+            className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg px-4 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+            Send Feedback
+          </button>
+          <button
+            type="button"
+            onClick={dismiss}
+            aria-label="Hide feedback button"
+            className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm hover:text-foreground transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
