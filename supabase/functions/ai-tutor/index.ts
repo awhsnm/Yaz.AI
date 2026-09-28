@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireUser, enforceRateLimit } from "../_shared/security.ts";
+import { adminClient, requireUser, enforceRateLimit } from "../_shared/security.ts";
 import {
   ANTI_GHOSTWRITING_RULES,
   containsGeneratedText,
@@ -63,7 +63,7 @@ serve(async (req) => {
     const limited = await enforceRateLimit(auth.user.id, "ai-tutor");
     if (limited) return limited;
 
-    const { messages, topic, subject, currentDraft } = await req.json();
+    const { messages, topic, subject, currentDraft, essayId, source } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
