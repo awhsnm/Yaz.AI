@@ -8,6 +8,7 @@ import SocraticPrompt from "@/components/SocraticPrompt";
 import ResearchConsentDialog, { CONSENT_VERSION } from "@/components/ResearchConsentDialog";
 import ResearchQuestionnaire, { QuestionnaireAnswers } from "@/components/ResearchQuestionnaire";
 import { useSocraticCoach } from "@/hooks/useSocraticCoach";
+import { useFocusAnalytics } from "@/hooks/useFocusAnalytics";
 import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -308,6 +309,14 @@ const StudentWorkspace = () => {
     enabled: researchMode && consented && !loading,
   });
 
+  // Raw focus/engagement events (tab switches, pauses, AI-panel use). Inert
+  // until the essay and user are loaded; never blocks or disturbs writing.
+  const focus = useFocusAnalytics({
+    essayId: essayId ?? undefined,
+    userId: user?.id,
+    enabled: !loading && !isSubmitted,
+  });
+
   const acceptConsent = async () => {
     if (!user) return;
     setConsentSaving(true);
@@ -331,6 +340,7 @@ const StudentWorkspace = () => {
     setSaving(false);
     setShowLowWords(false);
     coach.notifySave();
+    focus.log("essay_saved");
     if (leave) navigate("/student-dashboard");
     else toast({ title: t("workspace.draftSaved", "Draft saved") });
   };
@@ -532,7 +542,7 @@ const StudentWorkspace = () => {
               <textarea
                 ref={editorRef}
                 value={essay}
-                onChange={(e) => setEssay(e.target.value)}
+                onChange={(e) => { setEssay(e.target.value); focus.notifyTyping(); }}
                 onScroll={syncHighlightScroll}
                 onPaste={handlePaste}
                 onBeforeInput={handleBeforeInput}
@@ -574,6 +584,7 @@ const StudentWorkspace = () => {
               restoredChatHistory={chatHistory}
               onChatHistoryChange={setChatHistory}
               disabled={isSubmitted}
+              onActivity={focus.log}
             />
           </div>
         ) : null}

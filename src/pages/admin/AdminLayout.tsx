@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Users, MessageSquare, Activity, ArrowLeft, FileText, TrendingUp, UserPlus } from "lucide-react";
+import { Users, MessageSquare, Activity, ArrowLeft, FileText, TrendingUp, UserPlus, Brain } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const tabs = [
@@ -8,6 +8,7 @@ const tabs = [
   { to: "/admin/progress", end: false, label: "Progress", icon: TrendingUp },
   { to: "/admin/essays", end: false, label: "Essays", icon: FileText },
   { to: "/admin/feedback", end: false, label: "Feedback", icon: MessageSquare },
+  { to: "/admin/ai-interactions", end: false, label: "AI Interactions", icon: Brain },
   { to: "/admin/health", end: false, label: "System Health", icon: Activity },
 ];
 

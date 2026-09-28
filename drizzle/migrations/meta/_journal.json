@@ -36,6 +36,13 @@
       "when": 1790260462282,
       "tag": "0004_admin_view_coach_interventions",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790601305235,
+      "tag": "0005_ai_interaction_analytics",
+      "breakpoints": true
     }
   ]
 }
