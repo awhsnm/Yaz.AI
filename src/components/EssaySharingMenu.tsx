@@ -84,11 +84,12 @@ const EssaySharingMenu = ({
     setJoining(true);
     const { data, error } = await supabase.rpc("enroll_in_classroom", { _code: trimmed });
     setJoining(false);
-    if (error) {
+    // An invalid code yields an empty result set with no error, so check the row too.
+    const joined = (Array.isArray(data) ? data[0] : data) as { id?: string } | null;
+    if (error || !joined?.id) {
       toast({ title: "Could not join", description: "Check the lesson code with your teacher.", variant: "destructive" });
       return;
     }
-    const joined = (Array.isArray(data) ? data[0] : data) as { id?: string } | null;
     await loadClassrooms();
     setCodeOpen(false);
     setCode("");
