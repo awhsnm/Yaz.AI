@@ -340,6 +340,7 @@ const StudentWorkspace = () => {
     setSaving(false);
     setShowLowWords(false);
     coach.notifySave();
+    focus.log("essay_saved");
     if (leave) navigate("/student-dashboard");
     else toast({ title: t("workspace.draftSaved", "Draft saved") });
   };
@@ -541,7 +542,7 @@ const StudentWorkspace = () => {
               <textarea
                 ref={editorRef}
                 value={essay}
-                onChange={(e) => setEssay(e.target.value)}
+                onChange={(e) => { setEssay(e.target.value); focus.notifyTyping(); }}
                 onScroll={syncHighlightScroll}
                 onPaste={handlePaste}
                 onBeforeInput={handleBeforeInput}
@@ -583,6 +584,7 @@ const StudentWorkspace = () => {
               restoredChatHistory={chatHistory}
               onChatHistoryChange={setChatHistory}
               disabled={isSubmitted}
+              onActivity={focus.log}
             />
           </div>
         ) : null}
