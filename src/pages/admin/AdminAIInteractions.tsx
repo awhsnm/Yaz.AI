@@ -188,7 +188,7 @@ const AdminAIInteractions = () => {
   const [rows, setRows] = useState<EssayRow[]>([]);
   const [interactions, setInteractions] = useState<InteractionRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false Piet);
+  const [failed, setFailed] = useState(false);
 
   const [studentFilter, setStudentFilter] = useState("all");
   const [essayFilter, setEssayFilter] = useState("all");
