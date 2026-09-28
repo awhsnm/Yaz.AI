@@ -8,6 +8,7 @@ import SocraticPrompt from "@/components/SocraticPrompt";
 import ResearchConsentDialog, { CONSENT_VERSION } from "@/components/ResearchConsentDialog";
 import ResearchQuestionnaire, { QuestionnaireAnswers } from "@/components/ResearchQuestionnaire";
 import { useSocraticCoach } from "@/hooks/useSocraticCoach";
+import { useFocusAnalytics } from "@/hooks/useFocusAnalytics";
 import ExitModal from "@/components/ExitModal";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -306,6 +307,14 @@ const StudentWorkspace = () => {
     text: essay,
     isSubmitted,
     enabled: researchMode && consented && !loading,
+  });
+
+  // Raw focus/engagement events (tab switches, pauses, AI-panel use). Inert
+  // until the essay and user are loaded; never blocks or disturbs writing.
+  const focus = useFocusAnalytics({
+    essayId: essayId ?? undefined,
+    userId: user?.id,
+    enabled: !loading && !isSubmitted,
   });
 
   const acceptConsent = async () => {
