@@ -165,6 +165,120 @@ serve(async (req) => {
       }
     }
 
+    // ---- Interaction analytics (research). Never delays or blocks the reply:
+    // the row is written and classified in the background after streaming starts.
+    const waitUntil = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+      .EdgeRuntime?.waitUntil
+      ?? ((p: Promise<unknown>) => { void p.catch(() => {}); });
+
+    const lastUser = [...(Array.isArray(messages) ? messages : [])]
+      .reverse()
+      .find((m: { role?: string }) => m?.role === "user");
+    const studentMessage = sanitizeUserText(lastUser?.content ?? "", 4000);
+    const draftWordCount = currentDraft
+      ? String(currentDraft).trim().split(/\s+/).filter(Boolean).length
+      : 0;
+
+    if (studentMessage && typeof essayId === "string" && /^[0-9a-f-]{36}$/i.test(essayId)) {
+      waitUntil((async () => {
+        try {
+          const admin = adminClient();
+          const { data: inserted, error: insertError } = await admin
+            .from("ai_interactions")
+            .insert({
+              student_id: auth.user.id,
+              essay_id: essayId,
+              interaction_type: "tutor_chat",
+              source: source === "quick_prompt" ? "quick_prompt" : "custom",
+              student_message: studentMessage,
+              ai_response: reply,
+              word_count_at_interaction: draftWordCount,
+            })
+            .select("id")
+            .single();
+          if (insertError || !inserted) {
+            console.error("interaction insert failed:", insertError);
+            return;
+          }
+
+          // Predefined prompt buttons are classified directly; everything else is
+          // classified from the message text in the context of the essay state.
+          let category = "other";
+          let confidence = 0;
+          let reason = "classification unavailable";
+          if (source === "quick_prompt") {
+            category = "predefined_prompt";
+            confidence = 1;
+            reason = "Sent via a predefined prompt button in the AI panel.";
+          } else {
+            const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "openai/gpt-6-astra",
+                reasoning_effort: "low",
+                stream: false,
+                messages: [
+                  { role: "system", content: CLASSIFY_SYSTEM },
+                  {
+                    role: "user",
+                    content:
+                      `Essay topic: ${topic ?? "(none)"}\n` +
+                      `Subject: ${subject ?? "(none)"}\n` +
+                      `Draft length: ${draftWordCount} words\n` +
+                      `AI reply just given: ${reply}\n` +
+                      `Student message to classify: ${studentMessage}`,
+                  },
+                ],
+              }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const raw = String(data?.choices?.[0]?.message?.content ?? "")
+                .replace(/```(?:json)?/g, "")
+                .trim();
+              const match = raw.match(/\{[\s\S]*\}/);
+              if (match) {
+                const parsed = JSON.parse(match[0]) as {
+                  primary_category?: string;
+                  confidence_score?: unknown;
+                  classification_reason?: string;
+                };
+                const allowed = [
+                  "socratic_use", "generation_request", "predefined_prompt",
+                  "revision_feedback", "off_task", "other",
+                ];
+                if (parsed.primary_category && allowed.includes(parsed.primary_category)) {
+                  category = parsed.primary_category;
+                }
+                const c = Number(parsed.confidence_score);
+                confidence = Number.isFinite(c) ? Math.min(1, Math.max(0, c)) : 0;
+                reason = String(parsed.classification_reason ?? "").slice(0, 240) || reason;
+              }
+            } else {
+              console.error("classification call failed:", res.status);
+            }
+          }
+
+          const { error: updateError } = await admin
+            .from("ai_interactions")
+            .update({
+              primary_category: category,
+              confidence_score: confidence,
+              classification_reason: reason,
+              classified_at: new Date().toISOString(),
+            })
+            .eq("id", inserted.id);
+          if (updateError) console.error("classification update failed:", updateError);
+        } catch (e) {
+          console.error("interaction logging failed:", e);
+        }
+      })());
+    }
+
     // Re-emit the validated reply as an SSE stream the client already understands.
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
