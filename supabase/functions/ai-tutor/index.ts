@@ -51,6 +51,20 @@ LANGUAGE (ABSOLUTE)
 
 ${ANTI_GHOSTWRITING_RULES}`;
 
+// Research classification of the student's message. Context-based, not keyword-based.
+const CLASSIFY_SYSTEM = `You classify a student's message sent to a Socratic essay-writing coach.
+Consider what the student actually wrote and the surrounding essay context, not single keywords.
+Reply with STRICT JSON only, no markdown, exactly this shape:
+{"primary_category":"...","confidence_score":0.0,"classification_reason":"one short sentence"}
+Categories:
+- "socratic_use": asks for guidance, clarification, or help thinking; engages with the coaching to develop their own ideas.
+- "generation_request": asks the AI to write or complete essay text for them (a paragraph, introduction, conclusion, rewriting their text, "tell me what to write").
+- "predefined_prompt": the message is (word-for-word or trivially shortened) one of the platform's predefined prompt buttons.
+- "revision_feedback": asks how to improve their own reasoning, structure, evidence, clarity or argument in the draft.
+- "off_task": unrelated to the current essay task.
+- "other": cannot be confidently placed in any category.
+confidence_score is 0.0 to 1.0.`;
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
