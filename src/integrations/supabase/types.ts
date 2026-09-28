@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_interactions: {
+        Row: {
+          ai_response: string | null
+          classification_reason: string | null
+          classified_at: string | null
+          confidence_score: number | null
+          created_at: string
+          essay_id: string
+          id: string
+          interaction_type: string
+          primary_category: string | null
+          source: string
+          student_id: string
+          student_message: string
+          word_count_at_interaction: number | null
+        }
+        Insert: {
+          ai_response?: string | null
+          classification_reason?: string | null
+          classified_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          essay_id: string
+          id?: string
+          interaction_type?: string
+          primary_category?: string | null
+          source?: string
+          student_id: string
+          student_message: string
+          word_count_at_interaction?: number | null
+        }
+        Update: {
+          ai_response?: string | null
+          classification_reason?: string | null
+          classified_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          essay_id?: string
+          id?: string
+          interaction_type?: string
+          primary_category?: string | null
+          source?: string
+          student_id?: string
+          student_message?: string
+          word_count_at_interaction?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_interactions_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       annotations: {
         Row: {
           color_code: string
@@ -1108,6 +1164,41 @@ export type Database = {
           },
         ]
       }
+      focus_events: {
+        Row: {
+          created_at: string
+          essay_id: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          essay_id: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          essay_id?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "focus_events_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_events: {
         Row: {
           created_at: string
@@ -1337,6 +1428,7 @@ export type Database = {
     }
     Functions: {
       accept_assignment_invitations: { Args: never; Returns: number }
+      ai_interaction_overview: { Args: never; Returns: Json }
       beta_progress: {
         Args: never
         Returns: {
@@ -1389,6 +1481,18 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      essay_focus_metrics: {
+        Args: { _essay_id: string; _inactive_seconds?: number }
+        Returns: Json
+      }
+      essay_interaction_timeline: {
+        Args: { _essay_id: string }
+        Returns: {
+          detail: string
+          event_at: string
+          event_kind: string
+        }[]
       }
       has_role: {
         Args: {
@@ -1448,6 +1552,59 @@ export type Database = {
         Returns: boolean
       }
       record_beta_login: { Args: { _user_agent?: string }; Returns: string }
+      research_export_interactions: {
+        Args: never
+        Returns: {
+          ai_response: string
+          classification_reason: string
+          confidence_score: number
+          continued_writing: boolean
+          essay_id: string
+          interaction_at: string
+          interaction_id: string
+          interaction_type: string
+          primary_category: string
+          seconds_to_next_writing: number
+          source: string
+          student_email: string
+          student_id: string
+          student_message: string
+          word_count_at_interaction: number
+        }[]
+      }
+      research_export_rows: {
+        Args: never
+        Returns: {
+          active_focus_time: number
+          ai_interactions_per_100_words: number
+          average_focus_session: number
+          average_time_to_resume_writing_after_ai: number
+          average_time_to_resume_writing_after_focus_loss: number
+          created_at: string
+          essay_completion_time: number
+          essay_id: string
+          essay_mode: string
+          essay_number: number
+          essay_topic: string
+          external_window_switches: number
+          is_submitted: boolean
+          longest_focus_session: number
+          number_of_focus_interruptions: number
+          number_of_focus_sessions: number
+          off_task_interactions: number
+          predefined_prompt_usage: number
+          revision_feedback_requests: number
+          socratic_interactions: number
+          student_email: string
+          student_id: string
+          student_name: string
+          time_in_ai_interface: number
+          total_ai_interactions: number
+          word_count: number
+          writing_duration: number
+          writing_generation_requests: number
+        }[]
+      }
       return_essay_for_revision: {
         Args: { _comment?: string; _essay_id: string }
         Returns: string
