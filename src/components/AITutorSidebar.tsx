@@ -22,6 +22,8 @@ interface AITutorSidebarProps {
   restoredChatHistory?: Message[];
   onChatHistoryChange?: (history: Message[]) => void;
   disabled?: boolean;
+  /** Focus-analytics hook feed: AI panel opened to, message sent. */
+  onActivity?: (event: "ai_input_focus" | "ai_input_blur" | "ai_interaction") => void;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
@@ -32,7 +34,7 @@ const quickPrompts = [
   "How can I improve my last paragraph?",
 ];
 
-const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHistory, onChatHistoryChange, disabled = false }: AITutorSidebarProps) => {
+const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHistory, onChatHistoryChange, disabled = false, onActivity }: AITutorSidebarProps) => {
   const welcomeMsg: Message = {
     id: "welcome",
     role: "assistant",
@@ -53,12 +55,13 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
     onChatHistoryChange?.(messages);
   }, [messages, onChatHistoryChange]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, source: "custom" | "quick_prompt" = "custom") => {
     if (!text.trim() || isStreaming || disabled) return;
     if (!essayId) {
       toast({ title: "No active essay", description: "AI tutor requires an active essay.", variant: "destructive" });
       return;
     }
+    onActivity?.("ai_interaction");
 
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: text.trim() };
     setMessages((prev) => [...prev, userMsg]);
@@ -84,7 +87,7 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
           Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token ?? ""}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ messages: history, topic, subject, currentDraft }),
+        body: JSON.stringify({ messages: history, topic, subject, currentDraft, essayId, source }),
       });
 
       if (!resp.ok) {
@@ -225,7 +228,7 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
         {quickPrompts.map((prompt) => (
           <button
             key={prompt}
-            onClick={() => sendMessage(prompt)}
+            onClick={() => sendMessage(prompt, "quick_prompt")}
             disabled={isStreaming || disabled}
             className="text-xs bg-muted hover:bg-accent text-muted-foreground px-2.5 py-1 rounded-full font-display transition-colors flex items-center gap-1 disabled:opacity-50"
           >
@@ -241,6 +244,8 @@ const AITutorSidebar = ({ essayId, topic, subject, currentDraft, restoredChatHis
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
+          onFocus={() => onActivity?.("ai_input_focus")}
+          onBlur={() => onActivity?.("ai_input_blur")}
           placeholder={disabled ? "Essay submitted — chat is closed" : "Ask for guidance..."}
           className="font-display text-sm"
           disabled={isStreaming || disabled}

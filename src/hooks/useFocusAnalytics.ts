@@ -47,7 +47,7 @@ export function useFocusAnalytics({ essayId, userId, enabled }: Params) {
   const lastTextEvent = useRef(0);
   const started = useRef(false);
   const paused = useRef(false);
-  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(nullPing);
+  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flush = useCallback(async () => {
     if (!essayId || !userId || flushing.current || queue.current.length === 0) return;
