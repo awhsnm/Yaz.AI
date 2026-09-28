@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { adminClient, requireUser, enforceRateLimit } from "../_shared/security.ts";
+import { adminClient, enforceRateLimit, requireUser, sanitizeUserText } from "../_shared/security.ts";
 import {
   ANTI_GHOSTWRITING_RULES,
   containsGeneratedText,
