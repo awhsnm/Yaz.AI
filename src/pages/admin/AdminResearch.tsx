@@ -533,20 +533,48 @@ export default function AdminResearch() {
             </select>
           </label>
           <label className="text-xs text-muted-foreground space-y-1">Participant ID<Input className="h-8" placeholder="P01" value={pSearch} onChange={(e) => setPSearch(e.target.value)} /></label>
-          <div className="lg:col-span-6 flex justify-end">
+          <label className="text-xs text-muted-foreground space-y-1">Review status (tables)
+            <select className={`${sel} w-full`} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as typeof statusFilter); setMsgPage(0); setRespPage(0); }}>
+              <option value="all">All</option><option value="verified">Verified</option><option value="unreviewed">Unreviewed</option><option value="corrected">Corrected</option>
+            </select>
+          </label>
+          <label className="text-xs flex items-center gap-2 lg:col-span-2"><input type="checkbox" checked={anonTopics} onChange={(e) => setAnonTopics(e.target.checked)} />Anonymized topics in exports (T1, T2…); otherwise truncated to 40 characters</label>
+          <div className="lg:col-span-3 flex justify-end">
             <Button size="sm" variant="outline" onClick={() => downloadCsv("participant_engagement_filtered", participantRows())}><Download className="w-4 h-4 mr-1" />Export filtered data</Button>
           </div>
         </CardContent>
       </Card>
 
+      <Section title="Research readiness">
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          {[
+            ["Student messages unreviewed", msgsUnreviewed], ["AI responses unreviewed", respUnreviewed],
+            ["Direct-writing flags unreviewed", stats.flaggedUnverified], ["Completed essays not fully coded", codingUncoded],
+          ].map(([l, v]) => (
+            <div key={l as string} className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">{l}</div>
+              <div className="text-2xl font-semibold font-display text-foreground">{v}</div>
+            </div>
+          ))}
+        </div>
+        <p className={`text-sm font-medium ${msgsUnreviewed + respUnreviewed + stats.flaggedUnverified + codingUncoded ? "text-destructive" : "text-primary"}`}>
+          {msgsUnreviewed + respUnreviewed + stats.flaggedUnverified + codingUncoded ? "Not ready for final export" : "Ready for final export — all records used in charts and statistics are verified."}
+        </p>
+      </Section>
+
       {/* 1 */}
       <Section title="1. Study overview" actions={<Button size="sm" variant="outline" onClick={() => downloadCsv("table1_overview", table1Rows())}><Download className="w-4 h-4 mr-1" />Table 1 CSV</Button>}>
         <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
           {[
-            ["Started", stats.started], ["Completed", stats.completed], ["Completed essays analyzed", stats.essaysAnalyzed],
-            ["Used AI coach", stats.used], ["Did not use AI coach", stats.notUsed], ["Student AI messages", stats.messages],
-            ["AI responses", stats.responses], ["Mean messages / participant", stats.mean], ["Median messages / participant", stats.median],
-            ["Min – max messages", `${stats.min} – ${stats.max}`], ["Direct-writing requests", stats.direct], ["Redirected socratically", stats.redirected],
+            ["Participants who started", stats.started], ["Participants who completed", `${stats.completed} / ${stats.started}`],
+            ["Completed essays analyzed", stats.essaysAnalyzed], ["Used AI coach at least once", `${stats.used} / ${stats.started}`],
+            ["Started participants who did not use the AI coach", `${stats.startedNotUsed} / ${stats.started}`],
+            ["Completed participants who did not use the AI coach", `${stats.completedNotUsed} / ${stats.completed}`],
+            ["Student AI messages", stats.messages], ["AI responses", stats.responses],
+            ["Mean student AI messages per participant who started", stats.mean], ["Mean student AI messages among AI users", stats.meanUsers],
+            ["Median student AI messages per participant who started", stats.median],
+            ["Range of student AI messages per participant who started", `${stats.min} – ${stats.max}`],
+            ["Direct-writing requests (verified)", directReady ? stats.direct : "Pending"], ["Socratic redirections", directReady ? `${stats.redirected} / ${stats.direct}` : "Pending"],
           ].map(([l, v]) => (
             <div key={l as string} className="rounded-lg border border-border p-3">
               <div className="text-xs text-muted-foreground">{l}</div>
@@ -561,6 +589,11 @@ export default function AdminResearch() {
             <tbody>{table1.map(([m, r]) => <tr key={m} className="border-t border-border"><td className="px-2 py-1.5">{m}</td><td className="px-2 py-1.5">{r}</td></tr>)}</tbody>
           </table>
         </div>
+        {(stats.essaysAnalyzed > stats.completed || stats.rawSubmitted > stats.completed) && (
+          <p className="text-sm rounded-md border border-destructive/40 bg-destructive/5 p-3 text-foreground">
+            Data-quality warning: {stats.rawSubmitted} submitted essays exist for {stats.completed} completed participants in this selection. Only one essay per participant (their latest submission) is analyzed. Check for duplicate or test essays, and narrow the cohort or date range if needed.
+          </p>
+        )}
         {!!unclassified && <p className="text-xs text-muted-foreground">{unclassified} message(s) have no category yet. Direct-writing figures count verified or auto-labelled messages only — run Auto-label, then review.</p>}
       </Section>
 
@@ -603,22 +636,26 @@ export default function AdminResearch() {
 
       {/* 3 */}
       <Section title="3. Categories of writing support requested" actions={<>
-        <Button size="sm" variant="outline" onClick={() => downloadCsv("figure2_data", catCounts.map((c) => ({ Category: c.label, Count: c.count, Percent: c.pct })))}><Download className="w-4 h-4 mr-1" />CSV</Button>
+        <Button size="sm" variant="outline" onClick={() => downloadCsv("figure2_data", catCounts.map((c) => ({ Category: c.label, Count: c.count, ...(catsReady ? { Percent: c.pct } : {}) })))}><Download className="w-4 h-4 mr-1" />CSV</Button>
         <Button size="sm" variant="outline" onClick={() => downloadPng("figure2_request_categories", fig2.current)}><ImageIcon className="w-4 h-4 mr-1" />PNG</Button>
       </>}>
         <p className="text-sm italic">Figure 2. Categories of writing support requested from the Socratic AI coach.</p>
+        <p className="text-xs text-muted-foreground">Based on verified categories.{catsReady ? "" : ` ${msgsUnreviewed} message(s) still unreviewed — percentages are hidden until every message has a verified category.`}</p>
         <div ref={fig2} className="h-80">
           <ResponsiveContainer>
             <BarChart data={catCounts} layout="vertical" margin={{ left: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis type="category" dataKey="label" width={260} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, _n, p) => [`${v} (${p.payload.pct}%)`, "Messages"]} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, _n, p) => [catsReady ? `${v} (${p.payload.pct}%)` : `${v}`, "Messages"]} />
               <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 3, 3, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex justify-end"><Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("student_messages_categories", messageRows()))}><Download className="w-4 h-4 mr-1" />Messages CSV</Button></div>
+        <div className="flex justify-between items-center gap-2 flex-wrap">
+          <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={otherQueue} onChange={(e) => { setOtherQueue(e.target.checked); setMsgPage(0); }} />Review queue: only messages labelled “Other or uncategorized”</label>
+          <Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("student_messages_categories", messageRows()))}><Download className="w-4 h-4 mr-1" />Messages CSV</Button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead><tr><Th>Message</Th><Th>Participant</Th><Th>Essay</Th><Th>Student message</Th><Th>Auto category</Th><Th>Verified category</Th><Th>Direct-writing</Th><Th>Status</Th><Th>Reviewed</Th></tr></thead>
@@ -651,10 +688,11 @@ export default function AdminResearch() {
 
       {/* 4 */}
       <Section title="4. AI response behavior" actions={<>
-        <Button size="sm" variant="outline" onClick={() => downloadCsv("figure3_data", typeCounts.map((c) => ({ "Response type": c.label, Count: c.count, Percent: c.pct })))}><Download className="w-4 h-4 mr-1" />CSV</Button>
+        <Button size="sm" variant="outline" onClick={() => downloadCsv("figure3_data", typeCounts.map((c) => ({ "Response type": c.label, Count: c.count, ...(typesReady ? { Percent: c.pct } : {}) })))}><Download className="w-4 h-4 mr-1" />CSV</Button>
         <Button size="sm" variant="outline" onClick={() => downloadPng("figure3_response_types", fig3.current)}><ImageIcon className="w-4 h-4 mr-1" />PNG</Button>
       </>}>
         <p className="text-sm italic">Figure 3. Types of responses generated by the Socratic AI coach.</p>
+        <p className="text-xs text-muted-foreground">Based on verified response types.{typesReady ? "" : ` ${respUnreviewed} response(s) still unreviewed — percentages are hidden, and this chart should not be read as evidence that the coach was fully Socratic.`}</p>
         <div className="grid md:grid-cols-2 gap-4 items-center">
           <div ref={fig3} className="h-72">
             <ResponsiveContainer>
@@ -662,7 +700,7 @@ export default function AdminResearch() {
                 <Pie data={typeCounts} dataKey="count" nameKey="label" innerRadius={60} outerRadius={100} paddingAngle={1}>
                   {typeCounts.map((_, idx) => <Cell key={idx} fill={palette[idx % palette.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n, p) => [`${v} (${p.payload.pct}%)`, n]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n, p) => [typesReady ? `${v} (${p.payload.pct}%)` : `${v}`, n]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -670,13 +708,16 @@ export default function AdminResearch() {
             {typeCounts.map((t, idx) => (
               <li key={t.key} className="flex items-center gap-2">
                 <span className="inline-block w-3 h-3 rounded-sm" style={{ background: palette[idx % palette.length] }} />
-                <span className="flex-1">{t.label}</span><span className="text-muted-foreground">{t.count} ({t.pct}%)</span>
+                <span className="flex-1">{t.label}</span><span className="text-muted-foreground">{t.count}{typesReady ? ` (${t.pct}%)` : ""}</span>
               </li>
             ))}
-            {!typeCounts.length && <li className="text-muted-foreground">No labelled responses yet.</li>}
+            {!typeCounts.length && <li className="text-muted-foreground">No verified responses yet.</li>}
           </ul>
         </div>
-        <div className="flex justify-end"><Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("ai_responses_types", responseRows()))}><Download className="w-4 h-4 mr-1" />Responses CSV</Button></div>
+        <div className="flex justify-between items-center gap-2 flex-wrap">
+          <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={otherRespQueue} onChange={(e) => { setOtherRespQueue(e.target.checked); setRespPage(0); }} />Review queue: only responses labelled “Other”</label>
+          <Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("ai_responses_types", responseRows()))}><Download className="w-4 h-4 mr-1" />Responses CSV</Button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead><tr><Th>Response</Th><Th>Linked msg</Th><Th>Participant</Th><Th>Student request</Th><Th>AI response</Th><Th>Auto type</Th><Th>Verified type</Th><Th>Socratic</Th><Th>Boundary</Th><Th>Status</Th><Th>Reviewed</Th></tr></thead>
@@ -713,16 +754,18 @@ export default function AdminResearch() {
         <Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("boundary_audit", auditRows()))}><Download className="w-4 h-4 mr-1" />Audit CSV</Button>
       }>
         <div className="rounded-lg border border-border bg-muted/30 p-4">
-          <p className="text-lg font-display text-foreground">Direct-writing requests redirected with Socratic prompts: <strong>{stats.redirected}</strong> of <strong>{stats.direct}</strong> ({pct(stats.redirected, stats.direct)}%).</p>
+          <p className="text-lg font-display text-foreground">Direct-writing requests redirected with Socratic prompts: <strong>{redirText}</strong>.</p>
+          {!directReady && <p className="text-xs text-muted-foreground mt-1">This total is calculated only after every flagged row below has been verified.</p>}
+          <p className="text-xs text-muted-foreground mt-1">Direct-writing = a request for a ready-to-submit essay, paragraph, introduction, conclusion, multiple sentences, or a complete rewrite. Translation, vocabulary, grammar, spelling, single words, or “how do I say this in English” are not direct-writing requests.</p>
           <p className="text-xs text-muted-foreground mt-1">Neutral labels describe the request type and the coach's boundary response; they are not judgements about students.</p>
         </div>
         <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={auditOnlyDirect} onChange={(e) => setAuditOnlyDirect(e.target.checked)} />Show direct-writing requests only</label>
         <div className="overflow-x-auto max-h-[600px]">
           <table className="w-full text-xs">
-            <thead><tr><Th>Participant</Th><Th>Essay</Th><Th>Date and time</Th><Th>Student request</Th><Th>AI response</Th><Th>Direct-writing</Th><Th>AI wrote ready text</Th><Th>Socratic redirection</Th><Th>Status</Th><Th>Reviewer notes</Th></tr></thead>
+            <thead><tr><Th>Participant</Th><Th>Essay</Th><Th>Date and time</Th><Th>Student request</Th><Th>AI response</Th><Th>Direct-writing</Th><Th>AI gave wording / translation</Th><Th>AI wrote ready text</Th><Th>Socratic redirection</Th><Th>Status</Th><Th>Reviewer notes</Th></tr></thead>
             <tbody>{auditList.map((i) => {
               const r = reviews[i.id];
-              const ynSel = (key: "is_direct_writing_request" | "ai_wrote_ready_text" | "is_boundary_redirection") => (
+              const ynSel = (key: "is_direct_writing_request" | "ai_provided_wording" | "ai_wrote_ready_text" | "is_boundary_redirection") => (
                 <select className={sel} value={r?.[key] == null ? "" : String(r[key])} onChange={(e) => saveReview(i.id, { [key]: e.target.value === "" ? null : e.target.value === "true" })}>
                   <option value="">—</option><option value="true">Yes</option><option value="false">No</option>
                 </select>
@@ -731,13 +774,13 @@ export default function AdminResearch() {
                 <tr key={i.id} className="border-t border-border">
                   <Td>{pcode(i.student_id)}</Td><Td>{i.essay_id.slice(0, 8)}</Td><Td>{fmt(i.created_at)}</Td>
                   <Td wide><Clip text={i.student_message} /></Td><Td wide><Clip text={i.ai_response} /></Td>
-                  <Td>{ynSel("is_direct_writing_request")}</Td><Td>{ynSel("ai_wrote_ready_text")}</Td><Td>{ynSel("is_boundary_redirection")}</Td>
+                  <Td>{ynSel("is_direct_writing_request")}</Td><Td>{ynSel("ai_provided_wording")}</Td><Td>{ynSel("ai_wrote_ready_text")}</Td><Td>{ynSel("is_boundary_redirection")}</Td>
                   <Td>{r?.review_status ?? "unreviewed"}</Td>
                   <Td><Input className="h-8 text-xs min-w-[160px]" defaultValue={r?.reviewer_notes ?? ""} onBlur={(e) => e.target.value !== (r?.reviewer_notes ?? "") && saveReview(i.id, { reviewer_notes: e.target.value })} /></Td>
                 </tr>
               );
             })}
-            {!auditList.length && <tr><td colSpan={10} className="p-3 text-muted-foreground">No direct-writing requests in the current selection.</td></tr>}
+            {!auditList.length && <tr><td colSpan={11} className="p-3 text-muted-foreground">No direct-writing requests in the current selection.</td></tr>}
             </tbody>
           </table>
         </div>
