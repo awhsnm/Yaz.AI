@@ -1328,6 +1328,7 @@ export type Database = {
       }
       research_message_reviews: {
         Row: {
+          ai_provided_wording: boolean | null
           ai_wrote_ready_text: boolean | null
           auto_classified_at: string | null
           auto_request_category: string | null
@@ -1345,6 +1346,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_provided_wording?: boolean | null
           ai_wrote_ready_text?: boolean | null
           auto_classified_at?: string | null
           auto_request_category?: string | null
@@ -1362,6 +1364,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_provided_wording?: boolean | null
           ai_wrote_ready_text?: boolean | null
           auto_classified_at?: string | null
           auto_request_category?: string | null

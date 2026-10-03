@@ -6,12 +6,14 @@ export const REQUEST_CATEGORIES: Record<string, string> = {
   organization: "Organizing paragraphs or essay structure",
   counterargument: "Developing a counterargument",
   conclusion: "Writing a conclusion",
-  language: "Grammar, wording, or language clarification",
+  language: "Translation, vocabulary, grammar, or sentence-level wording support",
   direct_writing: "Direct request for AI-generated writing",
   other: "Other or uncategorized",
 };
 
 export const RESPONSE_TYPES: Record<string, string> = {
+  wording_support: "Translation or wording support",
+  language_explanation: "Grammar or language explanation",
   socratic_question: "Socratic question",
   clarifying_question: "Clarifying question",
   evidence_prompt: "Evidence prompt",
@@ -20,8 +22,8 @@ export const RESPONSE_TYPES: Record<string, string> = {
   counterargument_prompt: "Counterargument prompt",
   conclusion_prompt: "Conclusion prompt",
   boundary_redirection: "Boundary redirection after a direct-writing request",
-  technical_fallback: "Technical fallback response",
-  other: "Other",
+  technical_fallback: "Technical fallback or error",
+  other: "Other (only when none of the above applies)",
 };
 
 export const METHODS_NOTE =

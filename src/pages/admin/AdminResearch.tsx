@@ -22,7 +22,7 @@ type Interaction = { id: string; student_id: string; essay_id: string; student_m
 type Review = {
   interaction_id: string; auto_request_category: string | null; final_request_category: string | null;
   is_direct_writing_request: boolean | null; auto_response_type: string | null; final_response_type: string | null;
-  is_socratic_response: boolean | null; is_boundary_redirection: boolean | null; ai_wrote_ready_text: boolean | null;
+  is_socratic_response: boolean | null; is_boundary_redirection: boolean | null; ai_wrote_ready_text: boolean | null; ai_provided_wording: boolean | null;
   review_status: string; reviewer_notes: string | null; reviewed_by: string | null; reviewed_at: string | null;
 };
 type Coding = {
@@ -106,6 +106,11 @@ export default function AdminResearch() {
   const [msgPage, setMsgPage] = useState(0);
   const [respPage, setRespPage] = useState(0);
   const [auditOnlyDirect, setAuditOnlyDirect] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<"all" | "unreviewed" | "verified" | "corrected">("all");
+  const [otherQueue, setOtherQueue] = useState(false);
+  const [otherRespQueue, setOtherRespQueue] = useState(false);
+  const [anonTopics, setAnonTopics] = useState(true);
+  const [admins, setAdmins] = useState<Set<string>>(new Set());
 
   const fig1 = useRef<HTMLDivElement>(null);
   const fig2 = useRef<HTMLDivElement>(null);
@@ -130,6 +135,10 @@ export default function AdminResearch() {
       setReviews(Object.fromEntries(r.map((x) => [x.interaction_id, x])));
       setCoding(Object.fromEntries(cd.map((x) => [x.essay_id, x])));
       setAssignments(Object.fromEntries(a.map((x) => [x.id, x.title])));
+      try {
+        const roles = await fetchAll<{ user_id: string; role: string }>("user_roles", "user_id,role");
+        setAdmins(new Set(roles.filter((x) => x.role === "admin").map((x) => x.user_id)));
+      } catch { /* roles not readable: no admin exclusion */ }
     } catch (err) {
       toast.error("Could not load research data");
       console.error(err);
@@ -149,10 +158,10 @@ export default function AdminResearch() {
   }, [from, to]);
 
   const selParticipants = useMemo(() => participants.filter((p) =>
-    p.included &&
+    p.included && !admins.has(p.user_id) &&
     (cohort === "all" || p.study_cohort_id === cohort) &&
     (!pSearch || p.participant_code.toLowerCase().includes(pSearch.toLowerCase())),
-  ), [participants, cohort, pSearch]);
+  ), [participants, cohort, pSearch, admins]);
   const pByUser = useMemo(() => Object.fromEntries(selParticipants.map((p) => [p.user_id, p])), [selParticipants]);
 
   const selEssays = useMemo(() => essays.filter((e) =>
@@ -185,49 +194,77 @@ export default function AdminResearch() {
     });
   }, [selParticipants, selEssays, selInteractions, reviews]);
 
-  const verifiedCat = (id: string) => reviews[id]?.final_request_category ?? reviews[id]?.auto_request_category ?? null;
-  const verifiedType = (id: string) => reviews[id]?.final_response_type ?? reviews[id]?.auto_response_type ?? null;
+  const isVerified = (id: string) => !!reviews[id] && reviews[id].review_status !== "unreviewed";
+  const statusOf = (id: string) => (reviews[id]?.review_status ?? "unreviewed");
+  const passStatus = (st: string) => statusFilter === "all" || (statusFilter === "verified" ? st === "reviewed" : st === statusFilter);
+  const verifiedCat = (id: string) => (isVerified(id) ? reviews[id]?.final_request_category ?? null : null);
+  const verifiedType = (id: string) => (isVerified(id) ? reviews[id]?.final_response_type ?? null : null);
+  const shownCat = (id: string) => reviews[id]?.final_request_category ?? reviews[id]?.auto_request_category ?? null;
+  const shownType = (id: string) => reviews[id]?.final_response_type ?? reviews[id]?.auto_response_type ?? null;
 
   const stats = useMemo(() => {
     const counts = perParticipant.map((x) => x.msgs);
-    const direct = selInteractions.filter((i) => reviews[i.id]?.is_direct_writing_request);
+    const users = perParticipant.filter((x) => x.msgs > 0);
+    const completedP = perParticipant.filter((x) => x.completed);
+    const flagged = selInteractions.filter((i) => reviews[i.id]?.is_direct_writing_request);
+    const flaggedUnverified = flagged.filter((i) => !isVerified(i.id)).length;
+    const direct = flagged.filter((i) => isVerified(i.id));
     const redirected = direct.filter((i) => reviews[i.id]?.is_boundary_redirection);
+    const r2 = (n: number) => Math.round(n * 100) / 100;
     return {
       started: perParticipant.length,
-      completed: perParticipant.filter((x) => x.completed).length,
-      essaysAnalyzed: selEssays.filter((e) => e.is_submitted).length,
-      used: perParticipant.filter((x) => x.msgs > 0).length,
-      notUsed: perParticipant.filter((x) => x.msgs === 0).length,
+      completed: completedP.length,
+      // one unique completed essay per completed participant (their latest submitted one)
+      essaysAnalyzed: new Set(completedP.map((x) => x.primary?.id).filter(Boolean)).size,
+      rawSubmitted: selEssays.filter((e) => e.is_submitted).length,
+      used: users.length,
+      startedNotUsed: perParticipant.filter((x) => x.msgs === 0).length,
+      completedNotUsed: completedP.filter((x) => x.msgs === 0).length,
       messages: selInteractions.length,
       responses: selInteractions.filter((i) => i.ai_response).length,
-      mean: counts.length ? Math.round((counts.reduce((a, b) => a + b, 0) / counts.length) * 100) / 100 : 0,
+      mean: counts.length ? r2(counts.reduce((a, b) => a + b, 0) / counts.length) : 0,
+      meanUsers: users.length ? r2(users.reduce((a, b) => a + b.msgs, 0) / users.length) : 0,
       median: median(counts),
       min: counts.length ? Math.min(...counts) : 0,
       max: counts.length ? Math.max(...counts) : 0,
+      flaggedUnverified,
       direct: direct.length,
       redirected: redirected.length,
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perParticipant, selInteractions, selEssays, reviews]);
+
+  const directReady = stats.flaggedUnverified === 0;
+  const directText = directReady ? String(stats.direct) : `Pending verification (${stats.flaggedUnverified} flagged unreviewed)`;
+  const redirText = directReady ? `${stats.redirected} of ${stats.direct} (${pct(stats.redirected, stats.direct)}%)` : "Pending verification";
+  const of = (n: number, d: number, label: string) => `${n} of ${d} ${label} (${pct(n, d)}%)`;
 
   const table1 = [
     ["Participants who started the writing activity", stats.started],
-    ["Participants who completed the writing activity", stats.completed],
-    ["Completed essays analyzed", stats.essaysAnalyzed],
-    ["Participants who used the AI coach at least once", stats.used],
-    ["Participants who did not use the AI coach", stats.notUsed],
+    ["Participants who completed the writing activity", of(stats.completed, stats.started, "started")],
+    ["Completed essays analyzed (one per completed participant)", stats.essaysAnalyzed],
+    ["Participants who used the AI coach at least once", of(stats.used, stats.started, "started")],
+    ["Started participants who did not use the AI coach", of(stats.startedNotUsed, stats.started, "started")],
+    ["Completed participants who did not use the AI coach", of(stats.completedNotUsed, stats.completed, "completed")],
     ["Total student-initiated AI messages", stats.messages],
-    ["Mean student-initiated AI messages per participant", stats.mean],
-    ["Median student-initiated AI messages per participant", stats.median],
-    ["Range of student-initiated AI messages per participant", `${stats.min}–${stats.max}`],
+    ["Mean student AI messages per participant who started", `${stats.mean} (n = ${stats.started})`],
+    ["Mean student AI messages among AI users", `${stats.meanUsers} (n = ${stats.used})`],
+    ["Median student AI messages per participant who started", `${stats.median} (n = ${stats.started})`],
+    ["Range of student AI messages per participant who started", `${stats.min}–${stats.max}`],
     ["Total AI-generated responses", stats.responses],
-    ["Direct-writing requests", stats.direct],
-    ["Socratic redirections of direct-writing requests", stats.redirected],
+    ["Direct-writing requests (verified)", directText],
+    ["Socratic redirections of verified direct-writing requests", redirText],
   ] as const;
 
   const fig1Data = [...perParticipant].sort((a, b) => b.msgs - a.msgs).map((x) => ({
     id: x.p.participant_code, messages: x.msgs, responses: x.responses,
     status: x.completed ? "Completed" : "Started", words: wordCount(x.primary?.content), direct: x.direct,
   }));
+
+  const msgsUnreviewed = selInteractions.filter((i) => !isVerified(i.id)).length;
+  const respUnreviewed = selInteractions.filter((i) => i.ai_response && !isVerified(i.id)).length;
+  const catsReady = msgsUnreviewed === 0;
+  const typesReady = respUnreviewed === 0;
 
   const catCounts = useMemo(() => {
     const m: Record<string, number> = {};
@@ -246,6 +283,15 @@ export default function AdminResearch() {
   }, [selInteractions, reviews]);
 
   const unclassified = selInteractions.filter((i) => !reviews[i.id]?.auto_request_category && !reviews[i.id]?.final_request_category).length;
+
+  // anonymised / truncated topics for paper-ready outputs
+  const topicCode = useMemo(() => Object.fromEntries(topics.map((t, idx) => [t, `T${idx + 1}`])), [topics]);
+  const safeTopic = (e?: Essay) => {
+    const t = essayTopic(e);
+    if (!t) return "";
+    if (anonTopics) return topicCode[t] ?? "T?";
+    return t.length > 40 ? `${t.slice(0, 40)}…` : t;
+  };
 
   // ---------- actions ----------
   const pcode = (uid: string) => participants.find((p) => p.user_id === uid)?.participant_code ?? "";
@@ -314,7 +360,7 @@ export default function AdminResearch() {
   // ---------- export rows ----------
   const table1Rows = () => table1.map(([m, r]) => ({ Measure: m, Result: r }));
   const participantRows = () => perParticipant.map((x) => ({
-    "Participant ID": x.p.participant_code, "Essay ID": x.primary?.id ?? "", "Essay topic or assignment": essayTopic(x.primary),
+    "Participant ID": x.p.participant_code, "Essay topic or assignment": safeTopic(x.primary),
     "Essay status": x.completed ? "submitted" : "started", "Essay word count": wordCount(x.primary?.content),
     "Started at": x.primary?.created_at ?? "", "Completed at": x.primary?.submitted_at ?? "",
     "Number of student AI messages": x.msgs, "Number of AI responses": x.responses,
@@ -324,7 +370,7 @@ export default function AdminResearch() {
   const messageRows = () => selInteractions.map((i) => {
     const r = reviews[i.id];
     return {
-      "Message ID": i.id, "Participant ID": pcode(i.student_id), "Essay ID": i.essay_id, "Created at": i.created_at,
+      "Participant ID": pcode(i.student_id), "Created at": i.created_at,
       "Student message text": i.student_message,
       "Auto-detected request category": REQUEST_CATEGORIES[r?.auto_request_category ?? ""] ?? "",
       "Final verified request category": REQUEST_CATEGORIES[r?.final_request_category ?? ""] ?? "",
@@ -335,30 +381,35 @@ export default function AdminResearch() {
   const responseRows = () => selInteractions.filter((i) => i.ai_response).map((i) => {
     const r = reviews[i.id];
     return {
-      "AI response ID": `R-${i.id}`, "Linked student message ID": i.id, "Participant ID": pcode(i.student_id),
+      "Participant ID": pcode(i.student_id),
       "Student request text": i.student_message, "AI response text": i.ai_response,
       "Auto-detected response type": RESPONSE_TYPES[r?.auto_response_type ?? ""] ?? "",
       "Final verified response type": RESPONSE_TYPES[r?.final_response_type ?? ""] ?? "",
       "Socratic response": yn(r?.is_socratic_response), "Boundary redirection": yn(r?.is_boundary_redirection),
+      "AI provided direct wording or translation": yn(r?.ai_provided_wording),
       "Review status": r?.review_status ?? "unreviewed", "Reviewed at": r?.reviewed_at ?? "",
     };
   });
-  const auditList = selInteractions.filter((i) => !auditOnlyDirect || reviews[i.id]?.is_direct_writing_request);
+  const auditList = selInteractions.filter((i) => (!auditOnlyDirect || reviews[i.id]?.is_direct_writing_request) && passStatus(statusOf(i.id)));
   const auditRows = () => auditList.map((i) => {
     const r = reviews[i.id];
     return {
-      "Participant ID": pcode(i.student_id), "Essay ID": i.essay_id, "Date and time": i.created_at,
+      "Participant ID": pcode(i.student_id), "Date and time": i.created_at,
       "Student request text": i.student_message, "AI response text": i.ai_response ?? "",
-      "Direct-writing request": yn(r?.is_direct_writing_request), "AI wrote ready-to-submit text": yn(r?.ai_wrote_ready_text),
+      "Direct-writing request": yn(r?.is_direct_writing_request), "AI provided direct wording or translation": yn(r?.ai_provided_wording),
+      "AI wrote ready-to-submit text": yn(r?.ai_wrote_ready_text),
       "AI used Socratic redirection": yn(r?.is_boundary_redirection), "Researcher review status": r?.review_status ?? "unreviewed",
       "Reviewer notes": r?.reviewer_notes ?? "",
     };
   });
-  const codedEssays = perParticipant.filter((x) => x.completed && x.primary).map((x) => ({ x, e: x.primary! }));
+  const codingStatus = (id: string) => { const c = coding[id]; const n = CODING_FIELDS.filter(([k]) => typeof c?.[k] === "number").length; return n === CODING_FIELDS.length ? "reviewed" : "unreviewed"; };
+  const allCoded = perParticipant.filter((x) => x.completed && x.primary).map((x) => ({ x, e: x.primary! }));
+  const codingUncoded = allCoded.filter(({ e }) => codingStatus(e.id) !== "reviewed").length;
+  const codedEssays = allCoded.filter(({ e }) => passStatus(codingStatus(e.id)));
   const codingRows = () => codedEssays.map(({ x, e }) => {
     const c = coding[e.id];
     return {
-      "Participant ID": x.p.participant_code, "Essay ID": e.id, "Essay topic": essayTopic(e), "Word count": wordCount(e.content),
+      "Participant ID": x.p.participant_code, "Essay topic": safeTopic(e), "Word count": wordCount(e.content),
       ...Object.fromEntries(CODING_FIELDS.map(([k, l]) => [l, c?.[k] ?? ""])),
       "Researcher notes": c?.notes ?? "", "Coded at": c?.coded_at ?? "",
     };
@@ -394,10 +445,10 @@ export default function AdminResearch() {
       <h2>Table 1. Overview of participants, completed essays, and AI interaction data.</h2>${tbl(table1Rows())}
       <h2>Figure 1. Number of student-initiated AI messages by participant.</h2>${i1 ? `<img src="${i1}"/>` : ""}
       <h2>Figure 2. Categories of writing support requested from the Socratic AI coach.</h2>${i2 ? `<img src="${i2}"/>` : ""}
-      ${tbl(catCounts.map((c) => ({ Category: c.label, Count: c.count, Percent: `${c.pct}%` })))}
+      <p class="note">Based on verified categories.${catsReady ? "" : " Percentages withheld until all messages are reviewed."}</p>${tbl(catCounts.map((c) => ({ Category: c.label, Count: c.count, ...(catsReady ? { Percent: `${c.pct}%` } : {}) })))}
       <h2>Figure 3. Types of responses generated by the Socratic AI coach.</h2>${i3 ? `<img src="${i3}"/>` : ""}
-      ${tbl(typeCounts.map((c) => ({ "Response type": c.label, Count: c.count, Percent: `${c.pct}%` })))}
-      <h2>Direct-writing requests</h2><p>Direct-writing requests redirected with Socratic prompts: ${stats.redirected} of ${stats.direct} (${pct(stats.redirected, stats.direct)}%).</p>
+      <p class="note">Based on verified response types.${typesReady ? "" : " Percentages withheld until all responses are reviewed; this chart is not evidence that the coach was fully Socratic."}</p>${tbl(typeCounts.map((c) => ({ "Response type": c.label, Count: c.count, ...(typesReady ? { Percent: `${c.pct}%` } : {}) })))}
+      <h2>Direct-writing requests</h2><p>Direct-writing requests redirected with Socratic prompts: ${redirText}.</p>
       <h2>Completed essay characteristics</h2><p class="note">These descriptors summarize characteristics of completed essays. Because participants did not produce separate draft versions, these scores do not measure writing improvement over time.</p>${tbl(descriptor)}
       <h2>Methods note</h2><p>${esc(METHODS_NOTE)}</p>
       <script>setTimeout(()=>window.print(),400)</script></body></html>`);
@@ -407,8 +458,9 @@ export default function AdminResearch() {
   if (loading) return <div className="text-muted-foreground">Loading research data…</div>;
 
   const pageSize = 25;
-  const msgSlice = selInteractions.slice(msgPage * pageSize, (msgPage + 1) * pageSize);
-  const respList = selInteractions.filter((i) => i.ai_response);
+  const msgList = selInteractions.filter((i) => passStatus(statusOf(i.id)) && (!otherQueue || shownCat(i.id) === "other" || !shownCat(i.id)));
+  const msgSlice = msgList.slice(msgPage * pageSize, (msgPage + 1) * pageSize);
+  const respList = selInteractions.filter((i) => i.ai_response && passStatus(statusOf(i.id)) && (!otherRespQueue || shownType(i.id) === "other" || !shownType(i.id)));
   const respSlice = respList.slice(respPage * pageSize, (respPage + 1) * pageSize);
   const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 };
   const palette = ["hsl(var(--primary))", "hsl(var(--primary) / 0.8)", "hsl(var(--primary) / 0.65)", "hsl(var(--primary) / 0.5)", "hsl(var(--primary) / 0.38)", "hsl(var(--muted-foreground))", "hsl(var(--muted-foreground) / 0.7)", "hsl(var(--accent-foreground) / 0.6)", "hsl(var(--muted-foreground) / 0.45)", "hsl(var(--border))"];
@@ -481,20 +533,48 @@ export default function AdminResearch() {
             </select>
           </label>
           <label className="text-xs text-muted-foreground space-y-1">Participant ID<Input className="h-8" placeholder="P01" value={pSearch} onChange={(e) => setPSearch(e.target.value)} /></label>
-          <div className="lg:col-span-6 flex justify-end">
+          <label className="text-xs text-muted-foreground space-y-1">Review status (tables)
+            <select className={`${sel} w-full`} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as typeof statusFilter); setMsgPage(0); setRespPage(0); }}>
+              <option value="all">All</option><option value="verified">Verified</option><option value="unreviewed">Unreviewed</option><option value="corrected">Corrected</option>
+            </select>
+          </label>
+          <label className="text-xs flex items-center gap-2 lg:col-span-2"><input type="checkbox" checked={anonTopics} onChange={(e) => setAnonTopics(e.target.checked)} />Anonymized topics in exports (T1, T2…); otherwise truncated to 40 characters</label>
+          <div className="lg:col-span-3 flex justify-end">
             <Button size="sm" variant="outline" onClick={() => downloadCsv("participant_engagement_filtered", participantRows())}><Download className="w-4 h-4 mr-1" />Export filtered data</Button>
           </div>
         </CardContent>
       </Card>
 
+      <Section title="Research readiness">
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          {[
+            ["Student messages unreviewed", msgsUnreviewed], ["AI responses unreviewed", respUnreviewed],
+            ["Direct-writing flags unreviewed", stats.flaggedUnverified], ["Completed essays not fully coded", codingUncoded],
+          ].map(([l, v]) => (
+            <div key={l as string} className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">{l}</div>
+              <div className="text-2xl font-semibold font-display text-foreground">{v}</div>
+            </div>
+          ))}
+        </div>
+        <p className={`text-sm font-medium ${msgsUnreviewed + respUnreviewed + stats.flaggedUnverified + codingUncoded ? "text-destructive" : "text-primary"}`}>
+          {msgsUnreviewed + respUnreviewed + stats.flaggedUnverified + codingUncoded ? "Not ready for final export" : "Ready for final export — all records used in charts and statistics are verified."}
+        </p>
+      </Section>
+
       {/* 1 */}
       <Section title="1. Study overview" actions={<Button size="sm" variant="outline" onClick={() => downloadCsv("table1_overview", table1Rows())}><Download className="w-4 h-4 mr-1" />Table 1 CSV</Button>}>
         <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
           {[
-            ["Started", stats.started], ["Completed", stats.completed], ["Completed essays analyzed", stats.essaysAnalyzed],
-            ["Used AI coach", stats.used], ["Did not use AI coach", stats.notUsed], ["Student AI messages", stats.messages],
-            ["AI responses", stats.responses], ["Mean messages / participant", stats.mean], ["Median messages / participant", stats.median],
-            ["Min – max messages", `${stats.min} – ${stats.max}`], ["Direct-writing requests", stats.direct], ["Redirected socratically", stats.redirected],
+            ["Participants who started", stats.started], ["Participants who completed", `${stats.completed} / ${stats.started}`],
+            ["Completed essays analyzed", stats.essaysAnalyzed], ["Used AI coach at least once", `${stats.used} / ${stats.started}`],
+            ["Started participants who did not use the AI coach", `${stats.startedNotUsed} / ${stats.started}`],
+            ["Completed participants who did not use the AI coach", `${stats.completedNotUsed} / ${stats.completed}`],
+            ["Student AI messages", stats.messages], ["AI responses", stats.responses],
+            ["Mean student AI messages per participant who started", stats.mean], ["Mean student AI messages among AI users", stats.meanUsers],
+            ["Median student AI messages per participant who started", stats.median],
+            ["Range of student AI messages per participant who started", `${stats.min} – ${stats.max}`],
+            ["Direct-writing requests (verified)", directReady ? stats.direct : "Pending"], ["Socratic redirections", directReady ? `${stats.redirected} / ${stats.direct}` : "Pending"],
           ].map(([l, v]) => (
             <div key={l as string} className="rounded-lg border border-border p-3">
               <div className="text-xs text-muted-foreground">{l}</div>
@@ -509,6 +589,11 @@ export default function AdminResearch() {
             <tbody>{table1.map(([m, r]) => <tr key={m} className="border-t border-border"><td className="px-2 py-1.5">{m}</td><td className="px-2 py-1.5">{r}</td></tr>)}</tbody>
           </table>
         </div>
+        {(stats.essaysAnalyzed > stats.completed || stats.rawSubmitted > stats.completed) && (
+          <p className="text-sm rounded-md border border-destructive/40 bg-destructive/5 p-3 text-foreground">
+            Data-quality warning: {stats.rawSubmitted} submitted essays exist for {stats.completed} completed participants in this selection. Only one essay per participant (their latest submission) is analyzed. Check for duplicate or test essays, and narrow the cohort or date range if needed.
+          </p>
+        )}
         {!!unclassified && <p className="text-xs text-muted-foreground">{unclassified} message(s) have no category yet. Direct-writing figures count verified or auto-labelled messages only — run Auto-label, then review.</p>}
       </Section>
 
@@ -551,22 +636,26 @@ export default function AdminResearch() {
 
       {/* 3 */}
       <Section title="3. Categories of writing support requested" actions={<>
-        <Button size="sm" variant="outline" onClick={() => downloadCsv("figure2_data", catCounts.map((c) => ({ Category: c.label, Count: c.count, Percent: c.pct })))}><Download className="w-4 h-4 mr-1" />CSV</Button>
+        <Button size="sm" variant="outline" onClick={() => downloadCsv("figure2_data", catCounts.map((c) => ({ Category: c.label, Count: c.count, ...(catsReady ? { Percent: c.pct } : {}) })))}><Download className="w-4 h-4 mr-1" />CSV</Button>
         <Button size="sm" variant="outline" onClick={() => downloadPng("figure2_request_categories", fig2.current)}><ImageIcon className="w-4 h-4 mr-1" />PNG</Button>
       </>}>
         <p className="text-sm italic">Figure 2. Categories of writing support requested from the Socratic AI coach.</p>
+        <p className="text-xs text-muted-foreground">Based on verified categories.{catsReady ? "" : ` ${msgsUnreviewed} message(s) still unreviewed — percentages are hidden until every message has a verified category.`}</p>
         <div ref={fig2} className="h-80">
           <ResponsiveContainer>
             <BarChart data={catCounts} layout="vertical" margin={{ left: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis type="category" dataKey="label" width={260} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, _n, p) => [`${v} (${p.payload.pct}%)`, "Messages"]} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, _n, p) => [catsReady ? `${v} (${p.payload.pct}%)` : `${v}`, "Messages"]} />
               <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 3, 3, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex justify-end"><Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("student_messages_categories", messageRows()))}><Download className="w-4 h-4 mr-1" />Messages CSV</Button></div>
+        <div className="flex justify-between items-center gap-2 flex-wrap">
+          <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={otherQueue} onChange={(e) => { setOtherQueue(e.target.checked); setMsgPage(0); }} />Review queue: only messages labelled “Other or uncategorized”</label>
+          <Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("student_messages_categories", messageRows()))}><Download className="w-4 h-4 mr-1" />Messages CSV</Button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead><tr><Th>Message</Th><Th>Participant</Th><Th>Essay</Th><Th>Student message</Th><Th>Auto category</Th><Th>Verified category</Th><Th>Direct-writing</Th><Th>Status</Th><Th>Reviewed</Th></tr></thead>
@@ -594,15 +683,16 @@ export default function AdminResearch() {
             })}</tbody>
           </table>
         </div>
-        <Pager page={msgPage} total={selInteractions.length} size={pageSize} onChange={setMsgPage} />
+        <Pager page={msgPage} total={msgList.length} size={pageSize} onChange={setMsgPage} />
       </Section>
 
       {/* 4 */}
       <Section title="4. AI response behavior" actions={<>
-        <Button size="sm" variant="outline" onClick={() => downloadCsv("figure3_data", typeCounts.map((c) => ({ "Response type": c.label, Count: c.count, Percent: c.pct })))}><Download className="w-4 h-4 mr-1" />CSV</Button>
+        <Button size="sm" variant="outline" onClick={() => downloadCsv("figure3_data", typeCounts.map((c) => ({ "Response type": c.label, Count: c.count, ...(typesReady ? { Percent: c.pct } : {}) })))}><Download className="w-4 h-4 mr-1" />CSV</Button>
         <Button size="sm" variant="outline" onClick={() => downloadPng("figure3_response_types", fig3.current)}><ImageIcon className="w-4 h-4 mr-1" />PNG</Button>
       </>}>
         <p className="text-sm italic">Figure 3. Types of responses generated by the Socratic AI coach.</p>
+        <p className="text-xs text-muted-foreground">Based on verified response types.{typesReady ? "" : ` ${respUnreviewed} response(s) still unreviewed — percentages are hidden, and this chart should not be read as evidence that the coach was fully Socratic.`}</p>
         <div className="grid md:grid-cols-2 gap-4 items-center">
           <div ref={fig3} className="h-72">
             <ResponsiveContainer>
@@ -610,7 +700,7 @@ export default function AdminResearch() {
                 <Pie data={typeCounts} dataKey="count" nameKey="label" innerRadius={60} outerRadius={100} paddingAngle={1}>
                   {typeCounts.map((_, idx) => <Cell key={idx} fill={palette[idx % palette.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n, p) => [`${v} (${p.payload.pct}%)`, n]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n, p) => [typesReady ? `${v} (${p.payload.pct}%)` : `${v}`, n]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -618,13 +708,16 @@ export default function AdminResearch() {
             {typeCounts.map((t, idx) => (
               <li key={t.key} className="flex items-center gap-2">
                 <span className="inline-block w-3 h-3 rounded-sm" style={{ background: palette[idx % palette.length] }} />
-                <span className="flex-1">{t.label}</span><span className="text-muted-foreground">{t.count} ({t.pct}%)</span>
+                <span className="flex-1">{t.label}</span><span className="text-muted-foreground">{t.count}{typesReady ? ` (${t.pct}%)` : ""}</span>
               </li>
             ))}
-            {!typeCounts.length && <li className="text-muted-foreground">No labelled responses yet.</li>}
+            {!typeCounts.length && <li className="text-muted-foreground">No verified responses yet.</li>}
           </ul>
         </div>
-        <div className="flex justify-end"><Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("ai_responses_types", responseRows()))}><Download className="w-4 h-4 mr-1" />Responses CSV</Button></div>
+        <div className="flex justify-between items-center gap-2 flex-wrap">
+          <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={otherRespQueue} onChange={(e) => { setOtherRespQueue(e.target.checked); setRespPage(0); }} />Review queue: only responses labelled “Other”</label>
+          <Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("ai_responses_types", responseRows()))}><Download className="w-4 h-4 mr-1" />Responses CSV</Button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead><tr><Th>Response</Th><Th>Linked msg</Th><Th>Participant</Th><Th>Student request</Th><Th>AI response</Th><Th>Auto type</Th><Th>Verified type</Th><Th>Socratic</Th><Th>Boundary</Th><Th>Status</Th><Th>Reviewed</Th></tr></thead>
@@ -661,16 +754,18 @@ export default function AdminResearch() {
         <Button size="sm" variant="outline" onClick={() => confirmRaw(() => downloadCsv("boundary_audit", auditRows()))}><Download className="w-4 h-4 mr-1" />Audit CSV</Button>
       }>
         <div className="rounded-lg border border-border bg-muted/30 p-4">
-          <p className="text-lg font-display text-foreground">Direct-writing requests redirected with Socratic prompts: <strong>{stats.redirected}</strong> of <strong>{stats.direct}</strong> ({pct(stats.redirected, stats.direct)}%).</p>
+          <p className="text-lg font-display text-foreground">Direct-writing requests redirected with Socratic prompts: <strong>{redirText}</strong>.</p>
+          {!directReady && <p className="text-xs text-muted-foreground mt-1">This total is calculated only after every flagged row below has been verified.</p>}
+          <p className="text-xs text-muted-foreground mt-1">Direct-writing = a request for a ready-to-submit essay, paragraph, introduction, conclusion, multiple sentences, or a complete rewrite. Translation, vocabulary, grammar, spelling, single words, or “how do I say this in English” are not direct-writing requests.</p>
           <p className="text-xs text-muted-foreground mt-1">Neutral labels describe the request type and the coach's boundary response; they are not judgements about students.</p>
         </div>
         <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={auditOnlyDirect} onChange={(e) => setAuditOnlyDirect(e.target.checked)} />Show direct-writing requests only</label>
         <div className="overflow-x-auto max-h-[600px]">
           <table className="w-full text-xs">
-            <thead><tr><Th>Participant</Th><Th>Essay</Th><Th>Date and time</Th><Th>Student request</Th><Th>AI response</Th><Th>Direct-writing</Th><Th>AI wrote ready text</Th><Th>Socratic redirection</Th><Th>Status</Th><Th>Reviewer notes</Th></tr></thead>
+            <thead><tr><Th>Participant</Th><Th>Essay</Th><Th>Date and time</Th><Th>Student request</Th><Th>AI response</Th><Th>Direct-writing</Th><Th>AI gave wording / translation</Th><Th>AI wrote ready text</Th><Th>Socratic redirection</Th><Th>Status</Th><Th>Reviewer notes</Th></tr></thead>
             <tbody>{auditList.map((i) => {
               const r = reviews[i.id];
-              const ynSel = (key: "is_direct_writing_request" | "ai_wrote_ready_text" | "is_boundary_redirection") => (
+              const ynSel = (key: "is_direct_writing_request" | "ai_provided_wording" | "ai_wrote_ready_text" | "is_boundary_redirection") => (
                 <select className={sel} value={r?.[key] == null ? "" : String(r[key])} onChange={(e) => saveReview(i.id, { [key]: e.target.value === "" ? null : e.target.value === "true" })}>
                   <option value="">—</option><option value="true">Yes</option><option value="false">No</option>
                 </select>
@@ -679,13 +774,13 @@ export default function AdminResearch() {
                 <tr key={i.id} className="border-t border-border">
                   <Td>{pcode(i.student_id)}</Td><Td>{i.essay_id.slice(0, 8)}</Td><Td>{fmt(i.created_at)}</Td>
                   <Td wide><Clip text={i.student_message} /></Td><Td wide><Clip text={i.ai_response} /></Td>
-                  <Td>{ynSel("is_direct_writing_request")}</Td><Td>{ynSel("ai_wrote_ready_text")}</Td><Td>{ynSel("is_boundary_redirection")}</Td>
+                  <Td>{ynSel("is_direct_writing_request")}</Td><Td>{ynSel("ai_provided_wording")}</Td><Td>{ynSel("ai_wrote_ready_text")}</Td><Td>{ynSel("is_boundary_redirection")}</Td>
                   <Td>{r?.review_status ?? "unreviewed"}</Td>
                   <Td><Input className="h-8 text-xs min-w-[160px]" defaultValue={r?.reviewer_notes ?? ""} onBlur={(e) => e.target.value !== (r?.reviewer_notes ?? "") && saveReview(i.id, { reviewer_notes: e.target.value })} /></Td>
                 </tr>
               );
             })}
-            {!auditList.length && <tr><td colSpan={10} className="p-3 text-muted-foreground">No direct-writing requests in the current selection.</td></tr>}
+            {!auditList.length && <tr><td colSpan={11} className="p-3 text-muted-foreground">No direct-writing requests in the current selection.</td></tr>}
             </tbody>
           </table>
         </div>
