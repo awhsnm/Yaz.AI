@@ -22,7 +22,7 @@ type Interaction = { id: string; student_id: string; essay_id: string; student_m
 type Review = {
   interaction_id: string; auto_request_category: string | null; final_request_category: string | null;
   is_direct_writing_request: boolean | null; auto_response_type: string | null; final_response_type: string | null;
-  is_socratic_response: boolean | null; is_boundary_redirection: boolean | null; ai_wrote_ready_text: boolean | null;
+  is_socratic_response: boolean | null; is_boundary_redirection: boolean | null; ai_wrote_ready_text: boolean | null; ai_provided_wording: boolean | null;
   review_status: string; reviewer_notes: string | null; reviewed_by: string | null; reviewed_at: string | null;
 };
 type Coding = {
@@ -106,6 +106,11 @@ export default function AdminResearch() {
   const [msgPage, setMsgPage] = useState(0);
   const [respPage, setRespPage] = useState(0);
   const [auditOnlyDirect, setAuditOnlyDirect] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<"all" | "unreviewed" | "verified" | "corrected">("all");
+  const [otherQueue, setOtherQueue] = useState(false);
+  const [otherRespQueue, setOtherRespQueue] = useState(false);
+  const [anonTopics, setAnonTopics] = useState(true);
+  const [admins, setAdmins] = useState<Set<string>>(new Set());
 
   const fig1 = useRef<HTMLDivElement>(null);
   const fig2 = useRef<HTMLDivElement>(null);
@@ -130,6 +135,10 @@ export default function AdminResearch() {
       setReviews(Object.fromEntries(r.map((x) => [x.interaction_id, x])));
       setCoding(Object.fromEntries(cd.map((x) => [x.essay_id, x])));
       setAssignments(Object.fromEntries(a.map((x) => [x.id, x.title])));
+      try {
+        const roles = await fetchAll<{ user_id: string; role: string }>("user_roles", "user_id,role");
+        setAdmins(new Set(roles.filter((x) => x.role === "admin").map((x) => x.user_id)));
+      } catch { /* roles not readable: no admin exclusion */ }
     } catch (err) {
       toast.error("Could not load research data");
       console.error(err);
@@ -149,10 +158,10 @@ export default function AdminResearch() {
   }, [from, to]);
 
   const selParticipants = useMemo(() => participants.filter((p) =>
-    p.included &&
+    p.included && !admins.has(p.user_id) &&
     (cohort === "all" || p.study_cohort_id === cohort) &&
     (!pSearch || p.participant_code.toLowerCase().includes(pSearch.toLowerCase())),
-  ), [participants, cohort, pSearch]);
+  ), [participants, cohort, pSearch, admins]);
   const pByUser = useMemo(() => Object.fromEntries(selParticipants.map((p) => [p.user_id, p])), [selParticipants]);
 
   const selEssays = useMemo(() => essays.filter((e) =>
@@ -185,49 +194,77 @@ export default function AdminResearch() {
     });
   }, [selParticipants, selEssays, selInteractions, reviews]);
 
-  const verifiedCat = (id: string) => reviews[id]?.final_request_category ?? reviews[id]?.auto_request_category ?? null;
-  const verifiedType = (id: string) => reviews[id]?.final_response_type ?? reviews[id]?.auto_response_type ?? null;
+  const isVerified = (id: string) => !!reviews[id] && reviews[id].review_status !== "unreviewed";
+  const statusOf = (id: string) => (reviews[id]?.review_status ?? "unreviewed");
+  const passStatus = (st: string) => statusFilter === "all" || (statusFilter === "verified" ? st === "reviewed" : st === statusFilter);
+  const verifiedCat = (id: string) => (isVerified(id) ? reviews[id]?.final_request_category ?? null : null);
+  const verifiedType = (id: string) => (isVerified(id) ? reviews[id]?.final_response_type ?? null : null);
+  const shownCat = (id: string) => reviews[id]?.final_request_category ?? reviews[id]?.auto_request_category ?? null;
+  const shownType = (id: string) => reviews[id]?.final_response_type ?? reviews[id]?.auto_response_type ?? null;
 
   const stats = useMemo(() => {
     const counts = perParticipant.map((x) => x.msgs);
-    const direct = selInteractions.filter((i) => reviews[i.id]?.is_direct_writing_request);
+    const users = perParticipant.filter((x) => x.msgs > 0);
+    const completedP = perParticipant.filter((x) => x.completed);
+    const flagged = selInteractions.filter((i) => reviews[i.id]?.is_direct_writing_request);
+    const flaggedUnverified = flagged.filter((i) => !isVerified(i.id)).length;
+    const direct = flagged.filter((i) => isVerified(i.id));
     const redirected = direct.filter((i) => reviews[i.id]?.is_boundary_redirection);
+    const r2 = (n: number) => Math.round(n * 100) / 100;
     return {
       started: perParticipant.length,
-      completed: perParticipant.filter((x) => x.completed).length,
-      essaysAnalyzed: selEssays.filter((e) => e.is_submitted).length,
-      used: perParticipant.filter((x) => x.msgs > 0).length,
-      notUsed: perParticipant.filter((x) => x.msgs === 0).length,
+      completed: completedP.length,
+      // one unique completed essay per completed participant (their latest submitted one)
+      essaysAnalyzed: new Set(completedP.map((x) => x.primary?.id).filter(Boolean)).size,
+      rawSubmitted: selEssays.filter((e) => e.is_submitted).length,
+      used: users.length,
+      startedNotUsed: perParticipant.filter((x) => x.msgs === 0).length,
+      completedNotUsed: completedP.filter((x) => x.msgs === 0).length,
       messages: selInteractions.length,
       responses: selInteractions.filter((i) => i.ai_response).length,
-      mean: counts.length ? Math.round((counts.reduce((a, b) => a + b, 0) / counts.length) * 100) / 100 : 0,
+      mean: counts.length ? r2(counts.reduce((a, b) => a + b, 0) / counts.length) : 0,
+      meanUsers: users.length ? r2(users.reduce((a, b) => a + b.msgs, 0) / users.length) : 0,
       median: median(counts),
       min: counts.length ? Math.min(...counts) : 0,
       max: counts.length ? Math.max(...counts) : 0,
+      flaggedUnverified,
       direct: direct.length,
       redirected: redirected.length,
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perParticipant, selInteractions, selEssays, reviews]);
+
+  const directReady = stats.flaggedUnverified === 0;
+  const directText = directReady ? String(stats.direct) : `Pending verification (${stats.flaggedUnverified} flagged unreviewed)`;
+  const redirText = directReady ? `${stats.redirected} of ${stats.direct} (${pct(stats.redirected, stats.direct)}%)` : "Pending verification";
+  const of = (n: number, d: number, label: string) => `${n} of ${d} ${label} (${pct(n, d)}%)`;
 
   const table1 = [
     ["Participants who started the writing activity", stats.started],
-    ["Participants who completed the writing activity", stats.completed],
-    ["Completed essays analyzed", stats.essaysAnalyzed],
-    ["Participants who used the AI coach at least once", stats.used],
-    ["Participants who did not use the AI coach", stats.notUsed],
+    ["Participants who completed the writing activity", of(stats.completed, stats.started, "started")],
+    ["Completed essays analyzed (one per completed participant)", stats.essaysAnalyzed],
+    ["Participants who used the AI coach at least once", of(stats.used, stats.started, "started")],
+    ["Started participants who did not use the AI coach", of(stats.startedNotUsed, stats.started, "started")],
+    ["Completed participants who did not use the AI coach", of(stats.completedNotUsed, stats.completed, "completed")],
     ["Total student-initiated AI messages", stats.messages],
-    ["Mean student-initiated AI messages per participant", stats.mean],
-    ["Median student-initiated AI messages per participant", stats.median],
-    ["Range of student-initiated AI messages per participant", `${stats.min}–${stats.max}`],
+    ["Mean student AI messages per participant who started", `${stats.mean} (n = ${stats.started})`],
+    ["Mean student AI messages among AI users", `${stats.meanUsers} (n = ${stats.used})`],
+    ["Median student AI messages per participant who started", `${stats.median} (n = ${stats.started})`],
+    ["Range of student AI messages per participant who started", `${stats.min}–${stats.max}`],
     ["Total AI-generated responses", stats.responses],
-    ["Direct-writing requests", stats.direct],
-    ["Socratic redirections of direct-writing requests", stats.redirected],
+    ["Direct-writing requests (verified)", directText],
+    ["Socratic redirections of verified direct-writing requests", redirText],
   ] as const;
 
   const fig1Data = [...perParticipant].sort((a, b) => b.msgs - a.msgs).map((x) => ({
     id: x.p.participant_code, messages: x.msgs, responses: x.responses,
     status: x.completed ? "Completed" : "Started", words: wordCount(x.primary?.content), direct: x.direct,
   }));
+
+  const msgsUnreviewed = selInteractions.filter((i) => !isVerified(i.id)).length;
+  const respUnreviewed = selInteractions.filter((i) => i.ai_response && !isVerified(i.id)).length;
+  const catsReady = msgsUnreviewed === 0;
+  const typesReady = respUnreviewed === 0;
 
   const catCounts = useMemo(() => {
     const m: Record<string, number> = {};
@@ -246,6 +283,15 @@ export default function AdminResearch() {
   }, [selInteractions, reviews]);
 
   const unclassified = selInteractions.filter((i) => !reviews[i.id]?.auto_request_category && !reviews[i.id]?.final_request_category).length;
+
+  // anonymised / truncated topics for paper-ready outputs
+  const topicCode = useMemo(() => Object.fromEntries(topics.map((t, idx) => [t, `T${idx + 1}`])), [topics]);
+  const safeTopic = (e?: Essay) => {
+    const t = essayTopic(e);
+    if (!t) return "";
+    if (anonTopics) return topicCode[t] ?? "T?";
+    return t.length > 40 ? `${t.slice(0, 40)}…` : t;
+  };
 
   // ---------- actions ----------
   const pcode = (uid: string) => participants.find((p) => p.user_id === uid)?.participant_code ?? "";
@@ -314,7 +360,7 @@ export default function AdminResearch() {
   // ---------- export rows ----------
   const table1Rows = () => table1.map(([m, r]) => ({ Measure: m, Result: r }));
   const participantRows = () => perParticipant.map((x) => ({
-    "Participant ID": x.p.participant_code, "Essay ID": x.primary?.id ?? "", "Essay topic or assignment": essayTopic(x.primary),
+    "Participant ID": x.p.participant_code, "Essay topic or assignment": safeTopic(x.primary),
     "Essay status": x.completed ? "submitted" : "started", "Essay word count": wordCount(x.primary?.content),
     "Started at": x.primary?.created_at ?? "", "Completed at": x.primary?.submitted_at ?? "",
     "Number of student AI messages": x.msgs, "Number of AI responses": x.responses,
@@ -324,7 +370,7 @@ export default function AdminResearch() {
   const messageRows = () => selInteractions.map((i) => {
     const r = reviews[i.id];
     return {
-      "Message ID": i.id, "Participant ID": pcode(i.student_id), "Essay ID": i.essay_id, "Created at": i.created_at,
+      "Participant ID": pcode(i.student_id), "Created at": i.created_at,
       "Student message text": i.student_message,
       "Auto-detected request category": REQUEST_CATEGORIES[r?.auto_request_category ?? ""] ?? "",
       "Final verified request category": REQUEST_CATEGORIES[r?.final_request_category ?? ""] ?? "",
@@ -335,30 +381,35 @@ export default function AdminResearch() {
   const responseRows = () => selInteractions.filter((i) => i.ai_response).map((i) => {
     const r = reviews[i.id];
     return {
-      "AI response ID": `R-${i.id}`, "Linked student message ID": i.id, "Participant ID": pcode(i.student_id),
+      "Participant ID": pcode(i.student_id),
       "Student request text": i.student_message, "AI response text": i.ai_response,
       "Auto-detected response type": RESPONSE_TYPES[r?.auto_response_type ?? ""] ?? "",
       "Final verified response type": RESPONSE_TYPES[r?.final_response_type ?? ""] ?? "",
       "Socratic response": yn(r?.is_socratic_response), "Boundary redirection": yn(r?.is_boundary_redirection),
+      "AI provided direct wording or translation": yn(r?.ai_provided_wording),
       "Review status": r?.review_status ?? "unreviewed", "Reviewed at": r?.reviewed_at ?? "",
     };
   });
-  const auditList = selInteractions.filter((i) => !auditOnlyDirect || reviews[i.id]?.is_direct_writing_request);
+  const auditList = selInteractions.filter((i) => (!auditOnlyDirect || reviews[i.id]?.is_direct_writing_request) && passStatus(statusOf(i.id)));
   const auditRows = () => auditList.map((i) => {
     const r = reviews[i.id];
     return {
-      "Participant ID": pcode(i.student_id), "Essay ID": i.essay_id, "Date and time": i.created_at,
+      "Participant ID": pcode(i.student_id), "Date and time": i.created_at,
       "Student request text": i.student_message, "AI response text": i.ai_response ?? "",
-      "Direct-writing request": yn(r?.is_direct_writing_request), "AI wrote ready-to-submit text": yn(r?.ai_wrote_ready_text),
+      "Direct-writing request": yn(r?.is_direct_writing_request), "AI provided direct wording or translation": yn(r?.ai_provided_wording),
+      "AI wrote ready-to-submit text": yn(r?.ai_wrote_ready_text),
       "AI used Socratic redirection": yn(r?.is_boundary_redirection), "Researcher review status": r?.review_status ?? "unreviewed",
       "Reviewer notes": r?.reviewer_notes ?? "",
     };
   });
-  const codedEssays = perParticipant.filter((x) => x.completed && x.primary).map((x) => ({ x, e: x.primary! }));
+  const codingStatus = (id: string) => { const c = coding[id]; const n = CODING_FIELDS.filter(([k]) => typeof c?.[k] === "number").length; return n === CODING_FIELDS.length ? "reviewed" : "unreviewed"; };
+  const allCoded = perParticipant.filter((x) => x.completed && x.primary).map((x) => ({ x, e: x.primary! }));
+  const codingUncoded = allCoded.filter(({ e }) => codingStatus(e.id) !== "reviewed").length;
+  const codedEssays = allCoded.filter(({ e }) => passStatus(codingStatus(e.id)));
   const codingRows = () => codedEssays.map(({ x, e }) => {
     const c = coding[e.id];
     return {
-      "Participant ID": x.p.participant_code, "Essay ID": e.id, "Essay topic": essayTopic(e), "Word count": wordCount(e.content),
+      "Participant ID": x.p.participant_code, "Essay topic": safeTopic(e), "Word count": wordCount(e.content),
       ...Object.fromEntries(CODING_FIELDS.map(([k, l]) => [l, c?.[k] ?? ""])),
       "Researcher notes": c?.notes ?? "", "Coded at": c?.coded_at ?? "",
     };
@@ -394,10 +445,10 @@ export default function AdminResearch() {
       <h2>Table 1. Overview of participants, completed essays, and AI interaction data.</h2>${tbl(table1Rows())}
       <h2>Figure 1. Number of student-initiated AI messages by participant.</h2>${i1 ? `<img src="${i1}"/>` : ""}
       <h2>Figure 2. Categories of writing support requested from the Socratic AI coach.</h2>${i2 ? `<img src="${i2}"/>` : ""}
-      ${tbl(catCounts.map((c) => ({ Category: c.label, Count: c.count, Percent: `${c.pct}%` })))}
+      <p class="note">Based on verified categories.${catsReady ? "" : " Percentages withheld until all messages are reviewed."}</p>${tbl(catCounts.map((c) => ({ Category: c.label, Count: c.count, ...(catsReady ? { Percent: `${c.pct}%` } : {}) })))}
       <h2>Figure 3. Types of responses generated by the Socratic AI coach.</h2>${i3 ? `<img src="${i3}"/>` : ""}
-      ${tbl(typeCounts.map((c) => ({ "Response type": c.label, Count: c.count, Percent: `${c.pct}%` })))}
-      <h2>Direct-writing requests</h2><p>Direct-writing requests redirected with Socratic prompts: ${stats.redirected} of ${stats.direct} (${pct(stats.redirected, stats.direct)}%).</p>
+      <p class="note">Based on verified response types.${typesReady ? "" : " Percentages withheld until all responses are reviewed; this chart is not evidence that the coach was fully Socratic."}</p>${tbl(typeCounts.map((c) => ({ "Response type": c.label, Count: c.count, ...(typesReady ? { Percent: `${c.pct}%` } : {}) })))}
+      <h2>Direct-writing requests</h2><p>Direct-writing requests redirected with Socratic prompts: ${redirText}.</p>
       <h2>Completed essay characteristics</h2><p class="note">These descriptors summarize characteristics of completed essays. Because participants did not produce separate draft versions, these scores do not measure writing improvement over time.</p>${tbl(descriptor)}
       <h2>Methods note</h2><p>${esc(METHODS_NOTE)}</p>
       <script>setTimeout(()=>window.print(),400)</script></body></html>`);
@@ -407,8 +458,9 @@ export default function AdminResearch() {
   if (loading) return <div className="text-muted-foreground">Loading research data…</div>;
 
   const pageSize = 25;
-  const msgSlice = selInteractions.slice(msgPage * pageSize, (msgPage + 1) * pageSize);
-  const respList = selInteractions.filter((i) => i.ai_response);
+  const msgList = selInteractions.filter((i) => passStatus(statusOf(i.id)) && (!otherQueue || shownCat(i.id) === "other" || !shownCat(i.id)));
+  const msgSlice = msgList.slice(msgPage * pageSize, (msgPage + 1) * pageSize);
+  const respList = selInteractions.filter((i) => i.ai_response && passStatus(statusOf(i.id)) && (!otherRespQueue || shownType(i.id) === "other" || !shownType(i.id)));
   const respSlice = respList.slice(respPage * pageSize, (respPage + 1) * pageSize);
   const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 };
   const palette = ["hsl(var(--primary))", "hsl(var(--primary) / 0.8)", "hsl(var(--primary) / 0.65)", "hsl(var(--primary) / 0.5)", "hsl(var(--primary) / 0.38)", "hsl(var(--muted-foreground))", "hsl(var(--muted-foreground) / 0.7)", "hsl(var(--accent-foreground) / 0.6)", "hsl(var(--muted-foreground) / 0.45)", "hsl(var(--border))"];
@@ -594,7 +646,7 @@ export default function AdminResearch() {
             })}</tbody>
           </table>
         </div>
-        <Pager page={msgPage} total={selInteractions.length} size={pageSize} onChange={setMsgPage} />
+        <Pager page={msgPage} total={msgList.length} size={pageSize} onChange={setMsgPage} />
       </Section>
 
       {/* 4 */}
