@@ -33,6 +33,7 @@ const AdminProgress = lazy(() => import("./pages/admin/AdminProgress"));
 const AdminFeedback = lazy(() => import("./pages/admin/AdminFeedback"));
 const AdminHealth = lazy(() => import("./pages/admin/AdminHealth"));
 const AdminAIInteractions = lazy(() => import("./pages/admin/AdminAIInteractions"));
+const AdminResearch = lazy(() => import("./pages/admin/AdminResearch"));
 const AdminRosterInvite = lazy(() => import("./pages/admin/AdminRosterInvite"));
 
 const queryClient = new QueryClient();
@@ -81,6 +82,7 @@ const App = () => (
                 <Route path="essays" element={<Suspense fallback={AdminFallback}><AdminEssays /></Suspense>} />
                 <Route path="feedback" element={<Suspense fallback={AdminFallback}><AdminFeedback /></Suspense>} />
                 <Route path="roster-invite" element={<Suspense fallback={AdminFallback}><AdminRosterInvite /></Suspense>} />
+                <Route path="research" element={<Suspense fallback={AdminFallback}><AdminResearch /></Suspense>} />
                 <Route path="health" element={<Suspense fallback={AdminFallback}><AdminHealth /></Suspense>} />
                 <Route path="ai-interactions" element={<Suspense fallback={AdminFallback}><AdminAIInteractions /></Suspense>} />
               </Route>

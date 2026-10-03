@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Users, MessageSquare, Activity, ArrowLeft, FileText, TrendingUp, UserPlus, Brain } from "lucide-react";
+import { Users, MessageSquare, Activity, ArrowLeft, FileText, TrendingUp, UserPlus, Brain, FlaskConical } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const tabs = [
@@ -9,6 +9,7 @@ const tabs = [
   { to: "/admin/essays", end: false, label: "Essays", icon: FileText },
   { to: "/admin/feedback", end: false, label: "Feedback", icon: MessageSquare },
   { to: "/admin/ai-interactions", end: false, label: "AI Interactions", icon: Brain },
+  { to: "/admin/research", end: false, label: "Research Analytics", icon: FlaskConical },
   { to: "/admin/health", end: false, label: "System Health", icon: Activity },
 ];
 
@@ -20,7 +21,7 @@ const AdminLayout = () => (
           <ArrowLeft className="w-4 h-4" /> App
         </Link>
         <h1 className="text-lg font-semibold font-display text-foreground">Beta admin</h1>
-        <nav className="ml-auto flex gap-1">
+        <nav className="ml-auto flex gap-1 flex-wrap">
           {tabs.map((t) => (
             <NavLink
               key={t.to}
