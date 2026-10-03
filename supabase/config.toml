@@ -19,3 +19,6 @@ verify_jwt = false
 [functions.generate-essay-feedback]
 verify_jwt = false
 
+
+[functions.research-classify]
+verify_jwt = false
