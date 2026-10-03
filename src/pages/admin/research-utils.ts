@@ -47,13 +47,28 @@ export function toCsv(rows: Record<string, unknown>[]) {
   return [keys.join(","), ...rows.map((r) => keys.map((k) => cell(r[k])).join(","))].join("\n");
 }
 
-export function downloadCsv(name: string, rows: Record<string, unknown>[]) {
-  const blob = new Blob(["\ufeff" + toCsv(rows)], { type: "text/csv;charset=utf-8" });
+function triggerDownload(href: string, filename: string, revoke = false) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${name}.csv`;
+  a.href = href;
+  a.download = filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  // Keep the link alive long enough for the browser to start the download.
+  setTimeout(() => {
+    a.remove();
+    if (revoke) URL.revokeObjectURL(href);
+  }, 4000);
+}
+
+export function downloadCsv(name: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) {
+    alert("There is no data to export for this table yet.");
+    return;
+  }
+  const blob = new Blob(["\ufeff" + toCsv(rows)], { type: "text/csv;charset=utf-8" });
+  triggerDownload(URL.createObjectURL(blob), `${name}.csv`, true);
 }
 
 /** Render the first SVG inside a container to a PNG data URL (white background). */
@@ -93,8 +108,5 @@ export async function svgToPngDataUrl(container: HTMLElement | null): Promise<st
 export async function downloadPng(name: string, container: HTMLElement | null) {
   const data = await svgToPngDataUrl(container);
   if (!data) return;
-  const a = document.createElement("a");
-  a.href = data;
-  a.download = `${name}.png`;
-  a.click();
+  triggerDownload(data, `${name}.png`);
 }
