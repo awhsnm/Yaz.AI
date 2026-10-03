@@ -1282,6 +1282,112 @@ export type Database = {
         }
         Relationships: []
       }
+      research_essay_coding: {
+        Row: {
+          clear_claim: number | null
+          coded_at: string | null
+          coded_by: string | null
+          counterargument: number | null
+          essay_id: string
+          evidence_explanation: number | null
+          notes: string | null
+          organization: number | null
+          relevant_evidence: number | null
+        }
+        Insert: {
+          clear_claim?: number | null
+          coded_at?: string | null
+          coded_by?: string | null
+          counterargument?: number | null
+          essay_id: string
+          evidence_explanation?: number | null
+          notes?: string | null
+          organization?: number | null
+          relevant_evidence?: number | null
+        }
+        Update: {
+          clear_claim?: number | null
+          coded_at?: string | null
+          coded_by?: string | null
+          counterargument?: number | null
+          essay_id?: string
+          evidence_explanation?: number | null
+          notes?: string | null
+          organization?: number | null
+          relevant_evidence?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_essay_coding_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: true
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_message_reviews: {
+        Row: {
+          ai_wrote_ready_text: boolean | null
+          auto_classified_at: string | null
+          auto_request_category: string | null
+          auto_response_type: string | null
+          final_request_category: string | null
+          final_response_type: string | null
+          interaction_id: string
+          is_boundary_redirection: boolean | null
+          is_direct_writing_request: boolean | null
+          is_socratic_response: boolean | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_wrote_ready_text?: boolean | null
+          auto_classified_at?: string | null
+          auto_request_category?: string | null
+          auto_response_type?: string | null
+          final_request_category?: string | null
+          final_response_type?: string | null
+          interaction_id: string
+          is_boundary_redirection?: boolean | null
+          is_direct_writing_request?: boolean | null
+          is_socratic_response?: boolean | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_wrote_ready_text?: boolean | null
+          auto_classified_at?: string | null
+          auto_request_category?: string | null
+          auto_response_type?: string | null
+          final_request_category?: string | null
+          final_response_type?: string | null
+          interaction_id?: string
+          is_boundary_redirection?: boolean | null
+          is_direct_writing_request?: boolean | null
+          is_socratic_response?: boolean | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_message_reviews_interaction_id_fkey"
+            columns: ["interaction_id"]
+            isOneToOne: true
+            referencedRelation: "ai_interactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       research_participants: {
         Row: {
           consent_version: string | null
@@ -1350,6 +1456,59 @@ export type Database = {
             columns: ["participant_id"]
             isOneToOne: false
             referencedRelation: "research_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_cohorts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      study_participants: {
+        Row: {
+          consent_status: string
+          created_at: string
+          included: boolean
+          participant_code: string
+          study_cohort_id: string | null
+          user_id: string
+        }
+        Insert: {
+          consent_status?: string
+          created_at?: string
+          included?: boolean
+          participant_code: string
+          study_cohort_id?: string | null
+          user_id: string
+        }
+        Update: {
+          consent_status?: string
+          created_at?: string
+          included?: boolean
+          participant_code?: string
+          study_cohort_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_participants_study_cohort_id_fkey"
+            columns: ["study_cohort_id"]
+            isOneToOne: false
+            referencedRelation: "study_cohorts"
             referencedColumns: ["id"]
           },
         ]
@@ -1429,6 +1588,7 @@ export type Database = {
     Functions: {
       accept_assignment_invitations: { Args: never; Returns: number }
       ai_interaction_overview: { Args: never; Returns: Json }
+      assign_study_participants: { Args: never; Returns: number }
       beta_progress: {
         Args: never
         Returns: {

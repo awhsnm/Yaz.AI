@@ -43,6 +43,13 @@
       "when": 1790601305235,
       "tag": "0005_ai_interaction_analytics",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791022155123,
+      "tag": "0006_migration",
+      "breakpoints": true
     }
   ]
 }
