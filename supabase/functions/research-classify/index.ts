@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
           final_response_type: typ,
           is_direct_writing_request: !!out.is_direct_writing_request || cat === "direct_writing",
           is_socratic_response: !!out.is_socratic_response,
-          is_boundary_redirection: typ === "boundary_redirection",
+          is_boundary_redirection: typ === "boundary_redirection" || ((!!out.is_direct_writing_request || cat === "direct_writing") && !!out.is_socratic_response && !out.ai_wrote_ready_text),
           ai_wrote_ready_text: !!out.ai_wrote_ready_text,
         });
         classified++;
