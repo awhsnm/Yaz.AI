@@ -1,6 +1,6 @@
 import { adminClient, corsHeaders, jsonResponse, requireUser } from "../_shared/security.ts";
 
-const MODEL = "google/gemini-3.6-flash";
+const MODEL = "openai/gpt-6-astra";
 const BATCH = 20;
 
 export const REQUEST_CATEGORIES = [
@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: MODEL,
-          response_format: { type: "json_object" },
+          reasoning_effort: "low",
+          stream: false,
           messages: [
             { role: "system", content: SYSTEM },
             { role: "user", content: `<<<STUDENT_MESSAGE\n${(r.student_message ?? "").slice(0, 3000)}\nSTUDENT_MESSAGE>>>\n<<<AI_RESPONSE\n${(r.ai_response ?? "(none)").slice(0, 3000)}\nAI_RESPONSE>>>` },
@@ -54,7 +55,8 @@ Deno.serve(async (req) => {
       });
       if (!resp.ok) { console.warn("classify gateway", resp.status); return; }
       try {
-        const out = JSON.parse((await resp.json())?.choices?.[0]?.message?.content ?? "{}");
+        const raw = String((await resp.json())?.choices?.[0]?.message?.content ?? "");
+        const out = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1) || "{}");
         const cat = REQUEST_CATEGORIES.includes(out.request_category) ? out.request_category : "other";
         const typ = !r.ai_response ? "technical_fallback" : RESPONSE_TYPES.includes(out.response_type) ? out.response_type : "other";
         const row = {
