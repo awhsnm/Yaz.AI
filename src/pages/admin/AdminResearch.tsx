@@ -252,8 +252,10 @@ export default function AdminResearch() {
     ["Median student AI messages per participant who started", `${stats.median} (n = ${stats.started})`],
     ["Range of student AI messages per participant who started", `${stats.min}–${stats.max}`],
     ["Total AI-generated responses", stats.responses],
-    ["Direct-writing requests (verified)", directText],
-    ["Socratic redirections of verified direct-writing requests", redirText],
+    ...(directReady ? [
+      ["Direct-writing requests (verified)", directText],
+      ["Socratic redirections of verified direct-writing requests", redirText],
+    ] as const : []),
   ] as const;
 
   const fig1Data = [...perParticipant].sort((a, b) => b.msgs - a.msgs).map((x) => ({
@@ -574,7 +576,7 @@ export default function AdminResearch() {
             ["Mean student AI messages per participant who started", stats.mean], ["Mean student AI messages among AI users", stats.meanUsers],
             ["Median student AI messages per participant who started", stats.median],
             ["Range of student AI messages per participant who started", `${stats.min} – ${stats.max}`],
-            ["Direct-writing requests (verified)", directReady ? stats.direct : "Pending"], ["Socratic redirections", directReady ? `${stats.redirected} / ${stats.direct}` : "Pending"],
+            ...(directReady ? [["Direct-writing requests (verified)", stats.direct], ["Socratic redirections", `${stats.redirected} / ${stats.direct}`]] : []),
           ].map(([l, v]) => (
             <div key={l as string} className="rounded-lg border border-border p-3">
               <div className="text-xs text-muted-foreground">{l}</div>
