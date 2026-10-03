@@ -1,0 +1,1 @@
+- Research Analytics reads ai_interactions (one row = one student message + its AI reply) and stores researcher verification in separate review/coding tables; auto-labels never overwrite reviewed rows. Why: original messages stay untouched and manual coding wins.
