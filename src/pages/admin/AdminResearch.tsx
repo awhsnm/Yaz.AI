@@ -111,6 +111,7 @@ export default function AdminResearch() {
   const [otherRespQueue, setOtherRespQueue] = useState(false);
   const [anonTopics, setAnonTopics] = useState(true);
   const [admins, setAdmins] = useState<Set<string>>(new Set());
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
 
   const fig1 = useRef<HTMLDivElement>(null);
   const fig2 = useRef<HTMLDivElement>(null);
@@ -119,7 +120,7 @@ export default function AdminResearch() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [p, c, e, i, r, cd, a] = await Promise.all([
+      const [p, c, e, i, r, cd, a, x] = await Promise.all([
         fetchAll<Participant>("study_participants", "*"),
         fetchAll<Cohort>("study_cohorts", "id,name"),
         fetchAll<Essay>("essays", "id,student_id,topic,content,is_submitted,created_at,submitted_at,assignment_id"),
@@ -127,7 +128,9 @@ export default function AdminResearch() {
         fetchAll<Review>("research_message_reviews", "*"),
         fetchAll<Coding>("research_essay_coding", "*"),
         fetchAll<{ id: string; title: string }>("assignments", "id,title"),
+        fetchAll<{ essay_id: string }>("research_essay_exclusions", "essay_id"),
       ]);
+      setExcluded(new Set(x.map((r) => r.essay_id)));
       setParticipants(p.sort((x, y) => x.participant_code.localeCompare(y.participant_code, undefined, { numeric: true })));
       setCohorts(c);
       setEssays(e);
@@ -168,10 +171,30 @@ export default function AdminResearch() {
   const isTestEssay = useCallback((e: Essay) =>
     wordCount(e.content) < 40 || /pros and cons|cons and pros|basketball|^\s*ai\s*$/i.test(essayTopic(e)), [essayTopic]);
   const selEssays = useMemo(() => essays.filter((e) =>
-    pByUser[e.student_id] && !isTestEssay(e) && inRange(e.created_at) && (topic === "all" || essayTopic(e) === topic),
-  ), [essays, pByUser, inRange, topic, essayTopic, isTestEssay]);
+    pByUser[e.student_id] && !excluded.has(e.id) && !isTestEssay(e) && inRange(e.created_at) && (topic === "all" || essayTopic(e) === topic),
+  ), [essays, pByUser, excluded, inRange, topic, essayTopic, isTestEssay]);
   const essayIds = useMemo(() => new Set(selEssays.map((e) => e.id)), [selEssays]);
   const essayById = useMemo(() => Object.fromEntries(essays.map((e) => [e.id, e])), [essays]);
+
+  // Every essay from a non-admin participant, for the manual exclusion tool.
+  const allStudyEssays = useMemo(() =>
+    essays.filter((e) => participants.some((p) => p.user_id === e.student_id) && !admins.has(e.student_id))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+  [essays, participants, admins]);
+
+  const toggleExclude = async (e: Essay) => {
+    if (excluded.has(e.id)) {
+      const { error } = await supabase.from("research_essay_exclusions").delete().eq("essay_id", e.id);
+      if (error) return toast.error("Could not restore the essay");
+      setExcluded((s) => { const n = new Set(s); n.delete(e.id); return n; });
+      toast.success("Essay restored to the analysis");
+    } else {
+      const { error } = await supabase.from("research_essay_exclusions").insert({ essay_id: e.id, excluded_by: user?.id ?? null });
+      if (error) return toast.error("Could not exclude the essay");
+      setExcluded((s) => new Set(s).add(e.id));
+      toast.success("Essay excluded from the analysis");
+    }
+  };
 
   const selInteractions = useMemo(() => interactions.filter((i) => essayIds.has(i.essay_id) && inRange(i.created_at)), [interactions, essayIds, inRange]);
 
@@ -589,7 +612,7 @@ export default function AdminResearch() {
             <tbody>{table1.map(([m, r]) => <tr key={m} className="border-t border-border"><td className="px-2 py-1.5">{m}</td><td className="px-2 py-1.5">{r}</td></tr>)}</tbody>
           </table>
         </div>
-        <p className="text-xs text-muted-foreground">Excluded from analysis: essays under 40 words and test-run essays (topics such as "pros and cons of AI", "ai", "basketball").</p>
+        <p className="text-xs text-muted-foreground">Excluded from analysis: essays under 40 words, test-run essays (topics such as "pros and cons of AI", "ai", "basketball"), and {excluded.size} essay(s) you excluded manually in "Exclude essays from analysis" below.</p>
         {!!unclassified && <p className="text-xs text-muted-foreground">{unclassified} message(s) have no category yet. Direct-writing figures count verified or auto-labelled messages only — run Auto-label, then review.</p>}
       </Section>
 
@@ -808,6 +831,32 @@ export default function AdminResearch() {
             })}
             {!codedEssays.length && <tr><td colSpan={12} className="p-3 text-muted-foreground">No completed essays in the current selection.</td></tr>}
             </tbody>
+          </table>
+        </div>
+      </Section>
+
+      {/* Exclusions */}
+      <Section title="Exclude essays from analysis">
+        <p className="text-sm text-muted-foreground">Mark test runs or off-topic essays as excluded. An excluded essay and its AI messages are removed from every number, chart and export on this page. The essay itself is not deleted and can be restored at any time.</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead><tr><Th>Participant</Th><Th>Topic</Th><Th>Words</Th><Th>Submitted</Th><Th>Created</Th><Th>Status</Th><Th>{""}</Th></tr></thead>
+            <tbody>{allStudyEssays.map((e) => {
+              const p = participants.find((pp) => pp.user_id === e.student_id);
+              const ex = excluded.has(e.id);
+              const auto = isTestEssay(e);
+              return (
+                <tr key={e.id} className={`border-t border-border ${ex || auto ? "opacity-60" : ""}`}>
+                  <Td>{p?.participant_code ?? "—"}</Td>
+                  <Td wide><Clip text={essayTopic(e)} /></Td>
+                  <Td>{wordCount(e.content)}</Td>
+                  <Td>{e.is_submitted ? "Yes" : "No"}</Td>
+                  <Td>{fmt(e.created_at)}</Td>
+                  <Td>{ex ? "Excluded by you" : auto ? "Auto-excluded (test run)" : "Included"}</Td>
+                  <Td><Button size="sm" variant={ex ? "outline" : "destructive"} onClick={() => toggleExclude(e)}>{ex ? "Restore" : "Exclude"}</Button></Td>
+                </tr>
+              );
+            })}</tbody>
           </table>
         </div>
       </Section>
