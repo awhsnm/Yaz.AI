@@ -840,7 +840,7 @@ export default function AdminResearch() {
         <p className="text-sm text-muted-foreground">Mark test runs or off-topic essays as excluded. An excluded essay and its AI messages are removed from every number, chart and export on this page. The essay itself is not deleted and can be restored at any time.</p>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
-            <thead><tr><Th>Participant</Th><Th>Topic</Th><Th>Words</Th><Th>Submitted</Th><Th>Created</Th><Th>Status</Th><Th></Th></tr></thead>
+            <thead><tr><Th>Participant</Th><Th>Topic</Th><Th>Words</Th><Th>Submitted</Th><Th>Created</Th><Th>Status</Th><Th>{""}</Th></tr></thead>
             <tbody>{allStudyEssays.map((e) => {
               const p = participants.find((pp) => pp.user_id === e.student_id);
               const ex = excluded.has(e.id);
