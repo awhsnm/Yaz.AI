@@ -164,9 +164,12 @@ export default function AdminResearch() {
   ), [participants, cohort, pSearch, admins]);
   const pByUser = useMemo(() => Object.fromEntries(selParticipants.map((p) => [p.user_id, p])), [selParticipants]);
 
+  // Pilot/test essays excluded by the researcher: under 40 words, or test-run topics.
+  const isTestEssay = useCallback((e: Essay) =>
+    wordCount(e.content) < 40 || /pros and cons|cons and pros|basketball|^\s*ai\s*$/i.test(essayTopic(e)), [essayTopic]);
   const selEssays = useMemo(() => essays.filter((e) =>
-    pByUser[e.student_id] && inRange(e.created_at) && (topic === "all" || essayTopic(e) === topic),
-  ), [essays, pByUser, inRange, topic, essayTopic]);
+    pByUser[e.student_id] && !isTestEssay(e) && inRange(e.created_at) && (topic === "all" || essayTopic(e) === topic),
+  ), [essays, pByUser, inRange, topic, essayTopic, isTestEssay]);
   const essayIds = useMemo(() => new Set(selEssays.map((e) => e.id)), [selEssays]);
   const essayById = useMemo(() => Object.fromEntries(essays.map((e) => [e.id, e])), [essays]);
 
@@ -212,8 +215,8 @@ export default function AdminResearch() {
     return {
       started: perParticipant.length,
       completed: completedP.length,
-      // one unique completed essay per completed participant (their latest submitted one)
-      essaysAnalyzed: new Set(completedP.map((x) => x.primary?.id).filter(Boolean)).size,
+      // every submitted essay that passes the exclusion rules
+      essaysAnalyzed: selEssays.filter((e) => e.is_submitted).length,
       rawSubmitted: selEssays.filter((e) => e.is_submitted).length,
       used: users.length,
       startedNotUsed: perParticipant.filter((x) => x.msgs === 0).length,
@@ -240,7 +243,7 @@ export default function AdminResearch() {
   const table1 = [
     ["Participants who started the writing activity", stats.started],
     ["Participants who completed the writing activity", of(stats.completed, stats.started, "started")],
-    ["Completed essays analyzed (one per completed participant)", stats.essaysAnalyzed],
+    ["Completed essays analyzed (40+ words, test essays excluded)", stats.essaysAnalyzed],
     ["Participants who used the AI coach at least once", of(stats.used, stats.started, "started")],
     ["Started participants who did not use the AI coach", of(stats.startedNotUsed, stats.started, "started")],
     ["Completed participants who did not use the AI coach", of(stats.completedNotUsed, stats.completed, "completed")],
@@ -586,11 +589,7 @@ export default function AdminResearch() {
             <tbody>{table1.map(([m, r]) => <tr key={m} className="border-t border-border"><td className="px-2 py-1.5">{m}</td><td className="px-2 py-1.5">{r}</td></tr>)}</tbody>
           </table>
         </div>
-        {(stats.essaysAnalyzed > stats.completed || stats.rawSubmitted > stats.completed) && (
-          <p className="text-sm rounded-md border border-destructive/40 bg-destructive/5 p-3 text-foreground">
-            Data-quality warning: {stats.rawSubmitted} submitted essays exist for {stats.completed} completed participants in this selection. Only one essay per participant (their latest submission) is analyzed. Check for duplicate or test essays, and narrow the cohort or date range if needed.
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">Excluded from analysis: essays under 40 words and test-run essays (topics such as "pros and cons of AI", "ai", "basketball").</p>
         {!!unclassified && <p className="text-xs text-muted-foreground">{unclassified} message(s) have no category yet. Direct-writing figures count verified or auto-labelled messages only — run Auto-label, then review.</p>}
       </Section>
 
