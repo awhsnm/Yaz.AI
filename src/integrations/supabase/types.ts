@@ -1326,6 +1326,35 @@ export type Database = {
           },
         ]
       }
+      research_essay_exclusions: {
+        Row: {
+          created_at: string
+          essay_id: string
+          excluded_by: string | null
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          essay_id: string
+          excluded_by?: string | null
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          essay_id?: string
+          excluded_by?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_essay_exclusions_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: true
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       research_message_reviews: {
         Row: {
           ai_provided_wording: boolean | null
